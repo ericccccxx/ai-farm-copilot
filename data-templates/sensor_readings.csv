@@ -1,0 +1,3 @@
+timestamp,location,soil_moisture_percent,air_temperature_c,humidity_percent,rainfall_mm,light_lux,battery_percent
+2026-06-08T08:30:00+08:00,vineyard-block-a,28,31,46,0,62000,82
+

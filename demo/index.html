@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Farm Copilot Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --soil: #5b4636;
+        --leaf: #236b4b;
+        --leaf-dark: #133c2e;
+        --sun: #e0a931;
+        --mist: #eef5f1;
+        --line: #d4ded8;
+        --ink: #16211d;
+        --muted: #65756d;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--ink);
+        background: #f6f7f3;
+      }
+
+      header {
+        min-height: 260px;
+        padding: 36px clamp(20px, 5vw, 64px);
+        color: var(--white);
+        background:
+          linear-gradient(90deg, rgba(19, 60, 46, 0.92), rgba(35, 107, 75, 0.72)),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='600' viewBox='0 0 1400 600'%3E%3Crect width='1400' height='600' fill='%235f7549'/%3E%3Cpath d='M0 450 C220 380 300 520 510 430 C700 350 825 435 1020 375 C1190 322 1270 410 1400 360 L1400 600 L0 600 Z' fill='%238aa061'/%3E%3Cpath d='M0 510 C230 450 360 560 560 500 C780 435 920 510 1120 455 C1265 415 1330 465 1400 430 L1400 600 L0 600 Z' fill='%23b3be7d'/%3E%3Cpath d='M160 0 L160 600 M340 0 L340 600 M520 0 L520 600 M700 0 L700 600 M880 0 L880 600 M1060 0 L1060 600 M1240 0 L1240 600' stroke='%23ffffff' stroke-opacity='.12' stroke-width='16'/%3E%3C/svg%3E");
+        background-size: cover;
+        background-position: center;
+      }
+
+      .header-inner {
+        max-width: 980px;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 780px;
+        font-size: 44px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .tagline {
+        max-width: 680px;
+        margin: 18px 0 0;
+        font-size: 18px;
+        line-height: 1.5;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+        gap: 24px;
+        max-width: 1180px;
+        margin: -44px auto 40px;
+        padding: 0 20px;
+      }
+
+      section {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 12px 30px rgba(22, 33, 29, 0.08);
+      }
+
+      .panel {
+        padding: 22px;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      label {
+        display: block;
+        margin: 16px 0 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 11px 12px;
+        color: var(--ink);
+        background: #fbfcfa;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 112px;
+        resize: vertical;
+      }
+
+      .upload {
+        display: grid;
+        place-items: center;
+        min-height: 132px;
+        border: 1px dashed #9fb2a7;
+        border-radius: 8px;
+        background: var(--mist);
+        color: var(--muted);
+        text-align: center;
+        padding: 14px;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 6px;
+        padding: 13px 16px;
+        color: white;
+        background: var(--leaf);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--leaf-dark);
+      }
+
+      .report {
+        padding: 28px;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fbfcfa;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 16px;
+      }
+
+      .risk {
+        color: #7c4a05;
+      }
+
+      .report h3 {
+        margin: 22px 0 8px;
+        font-size: 15px;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      li {
+        margin: 7px 0;
+        line-height: 1.45;
+      }
+
+      .causes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .cause {
+        border-left: 4px solid var(--sun);
+        background: #fffaf0;
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      .cause strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .note {
+        margin-top: 20px;
+        padding: 14px;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 860px) {
+        h1 {
+          font-size: 34px;
+        }
+
+        main {
+          grid-template-columns: 1fr;
+          margin-top: -32px;
+        }
+
+        .meta,
+        .causes {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <h1>AI Farm Copilot</h1>
+        <p class="tagline">A local open-source demo for turning photos, field notes, weather, irrigation, and soil context into practical scouting reports.</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" aria-label="Inspection input">
+        <h2>Field Intake</h2>
+        <div class="upload">
+          Photo upload placeholder<br />
+          <small>Attach plant, vine, tree, turf, or drone images in the real agent workflow.</small>
+        </div>
+
+        <label for="scenario">Scenario</label>
+        <select id="scenario">
+          <option>Vineyard</option>
+          <option>Orchard</option>
+          <option>Golf Turf</option>
+          <option>Home Garden</option>
+        </select>
+
+        <label for="crop">Crop / turf / plant</label>
+        <input id="crop" value="Cabernet Sauvignon" />
+
+        <label for="area">Area size</label>
+        <input id="area" value="1.2 hectares" />
+
+        <label for="weather">Recent weather</label>
+        <input id="weather" value="Hot week, no rain, windy afternoons" />
+
+        <label for="irrigation">Irrigation</label>
+        <input id="irrigation" value="Drip, last irrigated 3 days ago" />
+
+        <label for="notes">Observation</label>
+        <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
+
+        <button id="generate">Generate Inspection Report</button>
+      </section>
+
+      <section class="report" aria-label="Inspection report">
+        <h2>Inspection Report</h2>
+        <div class="meta">
+          <div class="metric"><span>Scenario</span><strong id="out-scenario">Vineyard</strong></div>
+          <div class="metric"><span>Managed area</span><strong id="out-crop">Cabernet Sauvignon</strong></div>
+          <div class="metric"><span>Risk level</span><strong class="risk">Medium</strong></div>
+          <div class="metric"><span>Follow-up</span><strong>48-72 hours</strong></div>
+        </div>
+
+        <h3>Observations</h3>
+        <ul id="out-observations">
+          <li>Lower leaves are yellowing on several vines.</li>
+          <li>Some leaves are curling at the edges.</li>
+          <li>The issue may be localized or spreading; pattern is not yet confirmed.</li>
+        </ul>
+
+        <h3>Likely Causes</h3>
+        <div class="causes">
+          <div class="cause"><strong>Water stress</strong>Heat, wind, and leaf curl make this a medium-likelihood cause.</div>
+          <div class="cause"><strong>Nutrient stress</strong>Lower leaf yellowing can match nutrient imbalance or deficiency.</div>
+          <div class="cause"><strong>Irrigation uniformity</strong>Symptoms may follow drip line variation or emitter issues.</div>
+        </div>
+
+        <h3>Recommended Next Actions</h3>
+        <ol>
+          <li>Check soil moisture at root depth in affected and healthy zones.</li>
+          <li>Inspect nearby drip emitters or sprinkler coverage.</li>
+          <li>Capture comparison photos of healthy and affected plants or turf.</li>
+          <li>Review fertilizer, spray, mowing, pruning, or treatment history.</li>
+          <li>Recheck the same location within 48-72 hours.</li>
+        </ol>
+
+        <h3>Do Not Do Yet</h3>
+        <ul>
+          <li>Do not make chemical or major irrigation decisions from a single AI report.</li>
+          <li>Escalate to a qualified local expert if the issue spreads, affects high-value areas, or requires treatment.</li>
+        </ul>
+
+        <div class="note">
+          This demo shows the intended workflow. The real agent skill uses the same structure, asks for missing context, and clearly separates observations, assumptions, likely causes, next checks, and safety boundaries.
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const scenario = document.getElementById("scenario");
+      const crop = document.getElementById("crop");
+      const notes = document.getElementById("notes");
+      const outScenario = document.getElementById("out-scenario");
+      const outCrop = document.getElementById("out-crop");
+      const outObservations = document.getElementById("out-observations");
+
+      document.getElementById("generate").addEventListener("click", () => {
+        outScenario.textContent = scenario.value;
+        outCrop.textContent = crop.value || "Field area";
+        const observation = notes.value.trim() || "No observation provided.";
+        outObservations.innerHTML = "";
+        observation
+          .split(/[.\n]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, 4)
+          .forEach((item) => {
+            const li = document.createElement("li");
+            li.textContent = item.endsWith(".") ? item : `${item}.`;
+            outObservations.appendChild(li);
+          });
+      });
+    </script>
+  </body>
+</html>
+

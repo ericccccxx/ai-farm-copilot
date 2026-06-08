@@ -1,0 +1,3 @@
+date,location,scenario,crop_or_turf,area_size,observation,photo_filename,weather,irrigation,recent_treatment,notes
+2026-06-08,vineyard-block-a,vineyard,Cabernet Sauvignon,1.2 ha,"lower leaves yellowing and curling",IMG_0001.jpg,"hot dry week","drip, last irrigated 3 days ago","none recorded","check emitter pressure"
+
