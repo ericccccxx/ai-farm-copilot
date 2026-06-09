@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.18 demo supports:
+The V0.19 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
@@ -72,6 +72,7 @@ The V0.18 demo supports:
 - Markdown report download.
 - Browser print and Save as PDF report export.
 - Local saved inspection records.
+- Saved record search across crop, area, risk, notes, weather, and sensor text.
 - Saved record deletion.
 - JSON history export.
 - Local demo data reset.
@@ -133,6 +134,7 @@ ai-farm-copilot/
 - V0.16: Saved inspection risk trend chart.
 - V0.17: Dashboard and trend filtering by managed area.
 - V0.18: Dashboard risk filtering.
+- V0.19: Saved record search.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

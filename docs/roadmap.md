@@ -151,6 +151,12 @@ Success metric:
 - Apply risk filtering to dashboard metrics, risk trend, and area health cards.
 - Show a clear empty state when no saved records match the active filters.
 
+## V0.19: Saved Record Search
+
+- Add saved record search.
+- Match records by crop, area, scenario, risk, notes, weather, sensor data, and report text.
+- Show a clear empty state when no records match the search.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

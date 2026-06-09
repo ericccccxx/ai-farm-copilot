@@ -509,6 +509,10 @@
         font-size: 13px;
       }
 
+      .saved-search {
+        margin-top: 8px;
+      }
+
       .agent-prompt {
         margin-top: 22px;
         border-top: 1px solid var(--line);
@@ -615,7 +619,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.18 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.19 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -762,6 +766,7 @@ rainfall_mm: 0</textarea>
         <div id="statusLine" class="status-line"></div>
 
         <h3>Saved Records</h3>
+        <input id="savedSearch" class="saved-search" placeholder="Search saved records" />
         <div id="savedList" class="saved-list"></div>
       </section>
 
@@ -896,6 +901,7 @@ rainfall_mm: 0</textarea>
       const dashboardRiskFilterEl = document.getElementById("dashboardRiskFilter");
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
+      const savedSearchEl = document.getElementById("savedSearch");
       const savedListEl = document.getElementById("savedList");
       const statusLineEl = document.getElementById("statusLine");
       const storageKey = "aiFarmCopilotRecords";
@@ -2075,8 +2081,29 @@ rainfall_mm: 0</textarea>
         showStatus("Saved record loaded.");
       }
 
+      function recordMatchesSearch(record, query) {
+        if (!query) return true;
+        const haystack = [
+          record.crop,
+          record.areaName,
+          record.scenario,
+          record.risk,
+          record.followUp,
+          record.weather,
+          record.irrigation,
+          record.soil,
+          record.treatment,
+          record.sensorData,
+          record.observation,
+          record.report
+        ].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(query);
+      }
+
       function renderSavedRecords() {
+        const query = savedSearchEl.value.trim().toLowerCase();
         const records = getRecords();
+        const visibleRecords = records.filter((record) => recordMatchesSearch(record, query));
         savedListEl.innerHTML = "";
         if (!records.length) {
           const empty = document.createElement("div");
@@ -2086,7 +2113,15 @@ rainfall_mm: 0</textarea>
           return;
         }
 
-        records.slice(0, 6).forEach((record) => {
+        if (!visibleRecords.length) {
+          const empty = document.createElement("div");
+          empty.className = "status-line";
+          empty.textContent = "No saved records match this search.";
+          savedListEl.appendChild(empty);
+          return;
+        }
+
+        visibleRecords.slice(0, 8).forEach((record) => {
           const row = document.createElement("div");
           row.className = "item-row";
           const button = document.createElement("button");
@@ -2146,6 +2181,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("clearData").addEventListener("click", clearLocalData);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
       dashboardRiskFilterEl.addEventListener("change", renderDashboard);
+      savedSearchEl.addEventListener("input", renderSavedRecords);
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);

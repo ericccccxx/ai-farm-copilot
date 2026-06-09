@@ -18,7 +18,7 @@ Use this as the first GitHub issue list after launch.
 
 ## Demo
 
-- Add saved record search.
+- Add saved record sorting controls.
 - Add per-area historical health trend chart.
 - Add dashboard filters by scenario and date range.
 - Add saved weather snapshots by area.
