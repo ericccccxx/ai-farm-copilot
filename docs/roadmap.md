@@ -189,10 +189,10 @@ Success metric:
 
 ## V0.25: Automatic Location
 
-- Add a Use My Location control.
-- Use browser geolocation to fill latitude and longitude after user permission.
-- Keep manual latitude and longitude input as the fallback.
-- Show clear success, denied, timeout, and unsupported states.
+- Add a Use My Location control. Done in V0.25.
+- Use browser geolocation to fill latitude and longitude after user permission. Done in V0.25.
+- Keep manual latitude and longitude input as the fallback. Done in V0.25.
+- Show clear success, denied, timeout, and unsupported states. Done in V0.25.
 
 ## V0.26: Local Time and Timezone
 

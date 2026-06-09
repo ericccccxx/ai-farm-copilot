@@ -681,7 +681,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.24 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.25 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -767,6 +767,7 @@
           </div>
         </div>
         <div class="actions">
+          <button id="useLocation" class="secondary" type="button">Use My Location</button>
           <button id="fetchWeather" class="secondary" type="button">Fetch Weather</button>
           <button id="sampleWeather" class="secondary" type="button">Use Sample Weather</button>
         </div>
@@ -1579,6 +1580,42 @@ rainfall_mm: 0</textarea>
         showStatus("Sample weather added to the report.");
       }
 
+      function locationErrorMessage(error) {
+        if (error.code === 1) return "Location permission denied. You can still enter latitude and longitude manually.";
+        if (error.code === 2) return "Location unavailable. Check device location settings or enter coordinates manually.";
+        if (error.code === 3) return "Location request timed out. Try again or enter coordinates manually.";
+        return "Location request failed. Enter coordinates manually.";
+      }
+
+      function useMyLocation() {
+        if (!navigator.geolocation) {
+          showStatus("Geolocation is not supported in this browser.");
+          return;
+        }
+
+        showStatus("Requesting location permission...");
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          latitudeEl.value = latitude.toFixed(5);
+          longitudeEl.value = longitude.toFixed(5);
+          sensorDataEl.value = [
+            sensorDataEl.value.trim(),
+            `gps_latitude: ${latitude.toFixed(5)}`,
+            `gps_longitude: ${longitude.toFixed(5)}`,
+            `gps_accuracy_m: ${Math.round(accuracy)}`,
+            `gps_time: ${new Date(position.timestamp).toISOString()}`
+          ].filter(Boolean).join("\n");
+          buildReport();
+          showStatus(`Location added, accuracy about ${Math.round(accuracy)} m.`);
+        }, (error) => {
+          showStatus(locationErrorMessage(error));
+        }, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      }
+
       async function fetchWeather() {
         const latitude = Number(latitudeEl.value);
         const longitude = Number(longitudeEl.value);
@@ -2010,6 +2047,7 @@ rainfall_mm: 0</textarea>
           `Scenario: ${defaults.label}`,
           `Managed area: ${cropEl.value || defaults.crop}`,
           `Area size: ${areaEl.value || "Not provided"}`,
+          `Coordinates: ${latitudeEl.value && longitudeEl.value ? `${latitudeEl.value}, ${longitudeEl.value}` : "Not provided"}`,
           `Weather: ${weatherEl.value || "Not provided"}`,
           `Irrigation / watering: ${irrigationEl.value || "Not provided"}`,
           `Soil moisture: ${soilEl.value || "Not provided"}`,
@@ -2359,6 +2397,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("addArea").addEventListener("click", addManagedArea);
       document.getElementById("updateArea").addEventListener("click", updateCurrentArea);
       document.getElementById("deleteArea").addEventListener("click", deleteCurrentArea);
+      document.getElementById("useLocation").addEventListener("click", useMyLocation);
       document.getElementById("fetchWeather").addEventListener("click", fetchWeather);
       document.getElementById("sampleWeather").addEventListener("click", useSampleWeather);
       document.getElementById("importCsv").addEventListener("click", importCsv);
