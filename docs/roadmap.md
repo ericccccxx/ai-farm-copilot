@@ -169,6 +169,12 @@ Success metric:
 - Keep quick filters compatible with saved record sorting.
 - Make manual search return to normal search behavior.
 
+## V0.22: Per-Area Trend Lines
+
+- Add mini risk trend lines to area health cards.
+- Show recent risk movement for each managed area.
+- Keep the trend display lightweight and browser-only.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

@@ -502,6 +502,13 @@
         background: var(--danger);
       }
 
+      .area-sparkline {
+        display: block;
+        width: 100%;
+        height: 46px;
+        margin-top: 10px;
+      }
+
       .status-line {
         min-height: 18px;
         margin-top: 10px;
@@ -638,7 +645,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.21 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.22 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -1752,6 +1759,37 @@ rainfall_mm: 0</textarea>
         `;
       }
 
+      function areaSparkline(records) {
+        const recent = records.slice(0, 6).reverse();
+        if (recent.length < 2) {
+          return `<svg class="area-sparkline" viewBox="0 0 180 46" aria-hidden="true">
+            <line x1="8" y1="23" x2="172" y2="23" stroke="#e4e8df" stroke-width="2" stroke-dasharray="4 4" />
+          </svg>`;
+        }
+
+        const width = 180;
+        const height = 46;
+        const padding = 7;
+        const xStep = (width - padding * 2) / (recent.length - 1);
+        const points = recent.map((record, index) => {
+          const x = padding + index * xStep;
+          const y = padding + (3 - riskRank(record.risk)) * ((height - padding * 2) / 2);
+          return { x, y, risk: record.risk };
+        });
+        const path = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+        const dots = points.map((point) => {
+          const color = point.risk === "High" ? "#cf3b2e" : point.risk === "Medium" ? "#d9922e" : "#2f8c57";
+          return `<circle cx="${point.x}" cy="${point.y}" r="3.5" fill="${color}" />`;
+        }).join("");
+
+        return `<svg class="area-sparkline" viewBox="0 0 ${width} ${height}" aria-label="Area risk trend">
+          <line x1="${padding}" y1="${padding}" x2="${width - padding}" y2="${padding}" stroke="#eef1ec" />
+          <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="#eef1ec" />
+          <path d="${path}" fill="none" stroke="#315f45" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          ${dots}
+        </svg>`;
+      }
+
       function renderDashboard() {
         const areas = getAreas();
         const allRecords = getRecords();
@@ -1784,6 +1822,7 @@ rainfall_mm: 0</textarea>
               <div class="risk-segment medium${riskRank(risk) >= 2 ? " active" : ""}"></div>
               <div class="risk-segment high${riskRank(risk) >= 3 ? " active" : ""}"></div>
             </div>
+            ${areaSparkline(areaRecords)}
           `;
           card.addEventListener("click", () => selectManagedArea(area.id));
           areaHealthEl.appendChild(card);

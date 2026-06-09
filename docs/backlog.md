@@ -19,7 +19,7 @@ Use this as the first GitHub issue list after launch.
 ## Demo
 
 - Add saved record date range filter.
-- Add per-area historical health trend chart.
+- Add expanded per-area history detail view.
 - Add dashboard filters by scenario and date range.
 - Add saved weather snapshots by area.
 - Add forecast risk warnings.
