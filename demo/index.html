@@ -161,6 +161,13 @@
         font-size: 12px;
       }
 
+      .photo-meta {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.3;
+      }
+
       .photo-empty {
         grid-column: 1 / -1;
         display: grid;
@@ -495,7 +502,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, CSV readings, and simple sensor notes into saved area-level scouting reports. This V0.8 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV readings, and sensor notes into saved area-level scouting reports. This V0.9 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -715,6 +722,14 @@ rainfall_mm: 0</textarea>
       let loadedPhotos = [];
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
       const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
+      const roleMatchers = [
+        [/affected|stress|disease|problem|issue/i, "Affected area"],
+        [/healthy|control|comparison|normal/i, "Healthy comparison"],
+        [/close|macro|detail|leaf|spot/i, "Close-up"],
+        [/drone|overhead|aerial|ndvi|map/i, "Drone / overhead"],
+        [/sensor|camera|device|equipment/i, "Sensor / equipment"],
+        [/overview|wide|block|area/i, "Overview"]
+      ];
 
       const scenarioDefaults = {
         vineyard: {
@@ -924,7 +939,48 @@ rainfall_mm: 0</textarea>
 
       function photoChecklistItems() {
         if (!loadedPhotos.length) return ["No photos loaded. Add overview, affected, healthy comparison, and close-up images when possible."];
-        return loadedPhotos.map((photo, index) => `Photo ${index + 1}: ${photo.role} - ${photo.name}`);
+        return [
+          ...batchSummaryItems(),
+          ...loadedPhotos.map((photo, index) => {
+            const details = [photo.date, photo.areaHint].filter(Boolean).join(" · ");
+            return `Photo ${index + 1}: ${photo.role} - ${photo.name}${details ? ` (${details})` : ""}`;
+          })
+        ];
+      }
+
+      function inferPhotoRole(fileName, index) {
+        const match = roleMatchers.find(([pattern]) => pattern.test(fileName));
+        if (match) return match[1];
+        return photoRoles[index] || "Close-up";
+      }
+
+      function parsePhotoName(fileName) {
+        const baseName = fileName.replace(/\.[^.]+$/, "");
+        const dateMatch = baseName.match(/(20\d{2})[-_]?(\d{2})[-_]?(\d{2})/);
+        const date = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : "";
+        const tokens = baseName
+          .split(/[_\-\s]+/)
+          .filter(Boolean)
+          .filter((token) => !/^(20\d{2}|\d{2}|\d{1,3}|jpg|jpeg|png|webp)$/i.test(token))
+          .filter((token) => !roleMatchers.some(([pattern]) => pattern.test(token)));
+        const areaHint = tokens.slice(0, 4).join(" ");
+        return { date, areaHint };
+      }
+
+      function batchSummaryItems() {
+        if (!loadedPhotos.length) return [];
+        const byRole = loadedPhotos.reduce((summary, photo) => {
+          summary[photo.role] = (summary[photo.role] || 0) + 1;
+          return summary;
+        }, {});
+        const dates = [...new Set(loadedPhotos.map((photo) => photo.date).filter(Boolean))];
+        const areas = [...new Set(loadedPhotos.map((photo) => photo.areaHint).filter(Boolean))];
+        return [
+          `Batch size: ${loadedPhotos.length} image(s)`,
+          `Roles detected: ${Object.entries(byRole).map(([role, count]) => `${role} ${count}`).join(", ")}`,
+          `Dates detected: ${dates.length ? dates.join(", ") : "Not detected"}`,
+          `Area hints: ${areas.length ? areas.slice(0, 4).join(", ") : "Not detected"}`
+        ];
       }
 
       function renderPhotoPreviews() {
@@ -940,7 +996,8 @@ rainfall_mm: 0</textarea>
           const tile = document.createElement("div");
           tile.className = "photo-tile";
           const options = photoRoles.map((role) => `<option value="${role}"${role === photo.role ? " selected" : ""}>${role}</option>`).join("");
-          tile.innerHTML = `<img alt="Uploaded field preview" src="${photo.url}" /><select aria-label="Photo ${index + 1} role">${options}</select>`;
+          const meta = [photo.date, photo.areaHint].filter(Boolean).join(" · ") || "No filename metadata";
+          tile.innerHTML = `<img alt="Uploaded field preview" src="${photo.url}" /><select aria-label="Photo ${index + 1} role">${options}</select><div class="photo-meta">${meta}</div>`;
           tile.querySelector("select").addEventListener("change", (event) => {
             loadedPhotos[index].role = event.target.value;
             renderPhotoPreviews();
@@ -1260,7 +1317,8 @@ rainfall_mm: 0</textarea>
           `Soil moisture: ${soilEl.value || "Not provided"}`,
           `Recent treatment: ${treatmentEl.value || "Not provided"}`,
           `Photos loaded: ${loadedPhotos.length}`,
-          `Photo roles: ${loadedPhotos.length ? loadedPhotos.map((photo) => photo.role).join(", ") : "Not provided"}`
+          `Photo roles: ${loadedPhotos.length ? loadedPhotos.map((photo) => photo.role).join(", ") : "Not provided"}`,
+          ...batchSummaryItems().map((item) => `Photo batch: ${item}`)
         ];
         const dont = [
           "Do not make chemical or major irrigation decisions from this demo report alone.",
@@ -1342,7 +1400,7 @@ rainfall_mm: 0</textarea>
           sensorData: sensorDataEl.value || "",
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
-          photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role })),
+          photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role, date: photo.date, areaHint: photo.areaHint })),
           report: latestReport
         };
       }
@@ -1486,7 +1544,16 @@ rainfall_mm: 0</textarea>
         const files = Array.from(photoEl.files || []).slice(0, 6);
         if (!files.length) return;
         loadedPhotos.forEach((photo) => URL.revokeObjectURL(photo.url));
-        loadedPhotos = files.map((file, index) => ({ name: file.name, url: URL.createObjectURL(file), role: photoRoles[index] || "Close-up" }));
+        loadedPhotos = files.map((file, index) => {
+          const parsed = parsePhotoName(file.name);
+          return {
+            name: file.name,
+            url: URL.createObjectURL(file),
+            role: inferPhotoRole(file.name, index),
+            date: parsed.date,
+            areaHint: parsed.areaHint
+          };
+        });
         renderPhotoPreviews();
         buildReport();
       });

@@ -27,6 +27,8 @@ Use this as the first GitHub issue list after launch.
 - Add visual before/after comparison mode.
 - Add CSV field mapping controls.
 - Add CSV trend summary by managed area.
+- Add drag-and-drop photo batch upload.
+- Add batch naming guide to docs.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.

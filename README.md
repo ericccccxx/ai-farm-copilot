@@ -40,10 +40,12 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.8 demo supports:
+The V0.9 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
+- Batch photo filename parsing for date, area hints, and role detection.
+- Drone/camera batch summary in generated reports.
 - Photo checklist output in inspection reports.
 - CSV import for sensor readings or inspection logs.
 - Sample CSV import for demos.

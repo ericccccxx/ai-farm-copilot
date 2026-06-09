@@ -89,6 +89,8 @@ Success metric:
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
+- Add filename parsing for date, area hints, and role detection.
+- Add photo batch summary to reports.
 
 ## V0.10: Sensor Kit Support
 
