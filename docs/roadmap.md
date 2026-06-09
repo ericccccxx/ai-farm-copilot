@@ -107,6 +107,14 @@ Success metric:
 - Add vegetation vigor status.
 - Add NDVI values to generated reports.
 
+## V0.12: Advisor Mode
+
+- Add advisor-style recommendation output.
+- Add missing evidence summary.
+- Add expert review triggers.
+- Add 7-day care plan.
+- Add compatibility notes for adjacent farm advisor skills.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

@@ -33,6 +33,8 @@ Use this as the first GitHub issue list after launch.
 - Add Raspberry Pi camera capture example.
 - Add NDVI map upload.
 - Add area-level NDVI trend chart.
+- Add advisor prompt export for Codex and Claude.
+- Add advisor summary by saved record history.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.

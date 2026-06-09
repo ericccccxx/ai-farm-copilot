@@ -502,7 +502,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved area-level scouting reports. This V0.11 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.12 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -702,6 +702,12 @@ rainfall_mm: 0</textarea>
 
             <h3>Do Not Do Yet</h3>
             <ul id="outDont"></ul>
+
+            <h3>Advisor Mode</h3>
+            <ul id="outAdvisor"></ul>
+
+            <h3>7-Day Care Plan</h3>
+            <ol id="outCarePlan"></ol>
           </div>
 
           <aside class="side-card">
@@ -1436,6 +1442,50 @@ rainfall_mm: 0</textarea>
         return "5-7 days";
       }
 
+      function advisorItems(risk, defaults, observations, sensors) {
+        const hasPhotos = loadedPhotos.length > 0;
+        const hasSensorData = sensors.length && !sensors[0].startsWith("No sensor");
+        const advisor = [
+          `Likely issue posture: ${riskLabel(risk)} risk ${defaults.label.toLowerCase()} scouting case; treat this as decision support, not a confirmed diagnosis.`,
+          `Missing evidence: ${hasPhotos ? "Add a healthy comparison and close-up if they are missing." : "Add overview, affected, healthy comparison, and close-up photos."}`,
+          `Data confidence: ${hasSensorData ? "Sensor or imported data is present; compare readings with a healthy area before acting." : "No structured sensor data is present; add moisture, weather, or device readings if available."}`,
+          `Next question to answer: is the issue isolated, patterned by irrigation/traffic/topography, or spreading across the managed area?`,
+          `Expert review trigger: escalate if symptoms spread, high-value areas are affected, or treatment decisions are being considered.`
+        ];
+
+        if (sensorDataEl.value.toLowerCase().includes("ndvi")) {
+          advisor.push("Vegetation index note: compare NDVI against a healthy control area before using it as a treatment signal.");
+        }
+        if (observations.join(" ").toLowerCase().includes("yellow")) {
+          advisor.push("Yellowing note: separate older-leaf yellowing from new-growth yellowing before narrowing causes.");
+        }
+        return advisor;
+      }
+
+      function carePlanItems(risk) {
+        if (risk === "high") {
+          return [
+            "Day 1: capture comparison photos, inspect affected edges, and verify irrigation or sensor readings.",
+            "Day 2: recheck spread and document whether symptoms changed after water, weather, or traffic conditions.",
+            "Day 3-4: consult a qualified local expert if symptoms expand or treatment is being considered.",
+            "Day 5-7: repeat the same photo angles and update the saved record for trend comparison."
+          ];
+        }
+        if (risk === "medium") {
+          return [
+            "Day 1: confirm pattern across healthy and affected areas.",
+            "Day 2-3: verify soil moisture, irrigation coverage, and recent maintenance or treatment history.",
+            "Day 4-5: capture follow-up photos using the same roles and angles.",
+            "Day 6-7: save a new inspection record and compare risk level."
+          ];
+        }
+        return [
+          "Day 1-2: keep normal monitoring and add a healthy baseline photo.",
+          "Day 3-4: check weather and moisture trends.",
+          "Day 5-7: save a follow-up record if symptoms appear or conditions change."
+        ];
+      }
+
       function buildReport() {
         const defaults = scenarioDefaults[scenarioEl.value];
         const selectedArea = getSelectedArea();
@@ -1444,6 +1494,8 @@ rainfall_mm: 0</textarea>
         const observations = sentenceList(notesEl.value || "No observation provided.");
         const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
+        const advisor = advisorItems(risk, defaults, observations, sensors);
+        const carePlan = carePlanItems(risk);
         const context = [
           `Managed area record: ${selectedArea.name}`,
           `Scenario: ${defaults.label}`,
@@ -1476,6 +1528,8 @@ rainfall_mm: 0</textarea>
         setList("outSensors", sensors);
         setList("outActions", defaults.actions);
         setList("outDont", dont);
+        setList("outAdvisor", advisor);
+        setList("outCarePlan", carePlan);
 
         const causesEl = document.getElementById("outCauses");
         causesEl.innerHTML = "";
@@ -1513,6 +1567,12 @@ rainfall_mm: 0</textarea>
           "",
           "## Do Not Do Yet",
           ...dont.map((item) => `- ${item}`),
+          "",
+          "## Advisor Mode",
+          ...advisor.map((item) => `- ${item}`),
+          "",
+          "## 7-Day Care Plan",
+          ...carePlan.map((item, index) => `${index + 1}. ${item}`),
           "",
           "## Professional Review",
           "Use this report as scouting support. Review high-risk decisions with a qualified local professional."
