@@ -133,6 +133,12 @@ Success metric:
 - Tune each prompt with scenario-specific focus areas and missing evidence requests.
 - Show the active advisor template in the report interface.
 
+## V0.16: History Trend
+
+- Add a saved inspection risk trend chart.
+- Show recent risk movement from local history.
+- Keep the chart browser-only and compatible with GitHub Pages.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

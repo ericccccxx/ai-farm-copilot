@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.15 demo supports:
+The V0.16 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
@@ -59,6 +59,7 @@ The V0.15 demo supports:
 - Managed area records for vineyard blocks, orchard sections, golf zones, and garden beds.
 - Managed area update and delete controls.
 - Monitoring dashboard with area counts, record counts, high-risk count, and latest risk.
+- Risk trend chart from saved inspection history.
 - Area health cards with risk bars and recent inspection status.
 - Open-Meteo weather import using latitude and longitude.
 - Sample weather fallback for offline demos.
@@ -127,6 +128,7 @@ ai-farm-copilot/
 - V0.13: Browser print and Save as PDF report export.
 - V0.14: Copyable advisor prompt export for Codex and Claude.
 - V0.15: Scenario-specific advisor prompt templates.
+- V0.16: Saved inspection risk trend chart.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

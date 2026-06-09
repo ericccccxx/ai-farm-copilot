@@ -19,7 +19,7 @@ Use this as the first GitHub issue list after launch.
 ## Demo
 
 - Add saved record search.
-- Add historical area health trend chart.
+- Add per-area historical health trend chart.
 - Add dashboard filters by scenario and risk.
 - Add saved weather snapshots by area.
 - Add forecast risk warnings.
