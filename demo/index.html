@@ -389,7 +389,7 @@
 
       .dashboard-filter {
         display: grid;
-        grid-template-columns: 160px minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
         align-items: end;
         margin-bottom: 14px;
@@ -615,7 +615,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.17 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.18 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -769,11 +769,22 @@ rainfall_mm: 0</textarea>
         <h2>Monitoring Dashboard</h2>
 
         <div class="dashboard-filter">
-          <label for="dashboardAreaFilter">Dashboard Scope</label>
-          <select id="dashboardAreaFilter">
-            <option value="all">All areas</option>
-            <option value="current">Current selected area</option>
-          </select>
+          <div>
+            <label for="dashboardAreaFilter">Dashboard Scope</label>
+            <select id="dashboardAreaFilter">
+              <option value="all">All areas</option>
+              <option value="current">Current selected area</option>
+            </select>
+          </div>
+          <div>
+            <label for="dashboardRiskFilter">Risk Filter</label>
+            <select id="dashboardRiskFilter">
+              <option value="all">All risks</option>
+              <option value="High">High risk</option>
+              <option value="Medium">Medium risk</option>
+              <option value="Low">Low risk</option>
+            </select>
+          </div>
         </div>
 
         <div class="dashboard">
@@ -882,6 +893,7 @@ rainfall_mm: 0</textarea>
       const areaHealthEl = document.getElementById("areaHealth");
       const riskTrendEl = document.getElementById("riskTrend");
       const dashboardAreaFilterEl = document.getElementById("dashboardAreaFilter");
+      const dashboardRiskFilterEl = document.getElementById("dashboardRiskFilter");
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedListEl = document.getElementById("savedList");
@@ -1648,10 +1660,17 @@ rainfall_mm: 0</textarea>
         };
       }
 
+      function filterRecordsByRisk(records) {
+        const risk = dashboardRiskFilterEl.value || "all";
+        if (risk === "all") return records;
+        return records.filter((record) => record.risk === risk);
+      }
+
       function renderRiskTrend(records) {
         const recent = records.slice(0, 8).reverse();
         if (!recent.length) {
-          riskTrendEl.innerHTML = `<div class="status-line">Save inspections to build a risk trend.</div>`;
+          const message = getRecords().length ? "No saved records match the current dashboard filters." : "Save inspections to build a risk trend.";
+          riskTrendEl.innerHTML = `<div class="status-line">${message}</div>`;
           return;
         }
 
@@ -1697,7 +1716,7 @@ rainfall_mm: 0</textarea>
         const allRecords = getRecords();
         renderDashboardFilter(areas);
         const scope = dashboardScope(areas, allRecords);
-        const records = scope.records;
+        const records = filterRecordsByRisk(scope.records);
         const latest = records[0];
         const highRiskCount = records.filter((record) => record.risk === "High").length;
 
@@ -1709,7 +1728,7 @@ rainfall_mm: 0</textarea>
 
         areaHealthEl.innerHTML = "";
         scope.areas.slice(0, 6).forEach((area) => {
-          const areaRecords = allRecords.filter((record) => record.areaId === area.id);
+          const areaRecords = filterRecordsByRisk(allRecords.filter((record) => record.areaId === area.id));
           const risk = highestRisk(areaRecords);
           const latestRecord = areaRecords[0];
           const card = document.createElement("button");
@@ -2126,6 +2145,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
+      dashboardRiskFilterEl.addEventListener("change", renderDashboard);
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);

@@ -145,6 +145,12 @@ Success metric:
 - Update dashboard metrics, risk trend, and area health cards based on the selected scope.
 - Keep filtering local and browser-only.
 
+## V0.18: Dashboard Risk Filters
+
+- Add high, medium, and low-risk filters to the monitoring dashboard.
+- Apply risk filtering to dashboard metrics, risk trend, and area health cards.
+- Show a clear empty state when no saved records match the active filters.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.
