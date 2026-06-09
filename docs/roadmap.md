@@ -29,7 +29,15 @@ Success metric:
 - Add follow-up task generation.
 - Add exportable Markdown inspection report.
 
-## V0.2: Photo Intake and Weather
+## V0.2: Saved Records
+
+- Add multi-image preview.
+- Add sensor and weather reading notes.
+- Add local saved inspection records.
+- Add saved record loading.
+- Add JSON history export.
+
+## V0.3: Photo Intake and Weather
 
 - Improve photo intake checklist.
 - Add multi-photo comparison workflow.
@@ -38,14 +46,14 @@ Success metric:
 - Add irrigation schedule template.
 - Add weekly field summary workflow.
 
-## V0.3: Camera and Drone Workflow
+## V0.4: Camera and Drone Workflow
 
 - Add batch photo naming convention.
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
 
-## V0.4: Sensor Kit Support
+## V0.5: Sensor Kit Support
 
 - Add ESP32 JSON template.
 - Add Raspberry Pi camera workflow.

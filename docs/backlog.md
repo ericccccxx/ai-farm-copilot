@@ -18,9 +18,9 @@ Use this as the first GitHub issue list after launch.
 
 ## Demo
 
-- Add multi-photo preview.
+- Add report delete button.
+- Add saved record search.
 - Add PDF report export.
-- Add local storage for saved reports.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.
 

@@ -131,7 +131,9 @@
 
       .photo-preview {
         display: grid;
-        place-items: center;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
         min-height: 166px;
         overflow: hidden;
         border: 1px dashed #9db2a7;
@@ -139,13 +141,21 @@
         background: #edf5ef;
         color: var(--muted);
         text-align: center;
+        padding: 10px;
       }
 
       .photo-preview img {
         width: 100%;
-        height: 100%;
-        max-height: 240px;
+        height: 112px;
         object-fit: cover;
+        border-radius: 6px;
+      }
+
+      .photo-empty {
+        grid-column: 1 / -1;
+        display: grid;
+        place-items: center;
+        min-height: 144px;
       }
 
       .actions {
@@ -169,6 +179,11 @@
       button.secondary {
         color: var(--canopy-dark);
         background: #e8f2ec;
+      }
+
+      button.warning {
+        color: #7a4d05;
+        background: #fff5d6;
       }
 
       button:hover {
@@ -230,10 +245,11 @@
 
       .side-card img {
         width: 100%;
-        max-height: 180px;
+        height: 96px;
         object-fit: cover;
         border-radius: 6px;
         border: 1px solid var(--line);
+        margin-bottom: 8px;
       }
 
       .side-card p {
@@ -283,6 +299,42 @@
         line-height: 1.5;
       }
 
+      .saved-list {
+        display: grid;
+        gap: 9px;
+        margin-top: 12px;
+      }
+
+      .saved-item {
+        width: 100%;
+        min-height: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--ink);
+        background: #fbfcfa;
+        text-align: left;
+        font-weight: 400;
+      }
+
+      .saved-item strong,
+      .saved-item span {
+        display: block;
+      }
+
+      .saved-item span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-line {
+        min-height: 18px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
       @media (max-width: 940px) {
         main,
         .report-layout {
@@ -318,7 +370,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn a field photo, local context, and simple sensor notes into a structured scouting report. This V0.1 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved scouting reports. This V0.2 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -327,14 +379,14 @@
         <h2>Field Intake</h2>
 
         <div id="preview" class="photo-preview">
-          <div>
+          <div class="photo-empty">
             <strong>Photo preview</strong><br />
-            <small>Upload a plant, vine, tree, turf, or drone image.</small>
+            <small>Upload plant, vine, tree, turf, or drone images.</small>
           </div>
         </div>
 
-        <label for="photo">Photo</label>
-        <input id="photo" type="file" accept="image/*" />
+        <label for="photo">Photos</label>
+        <input id="photo" type="file" accept="image/*" multiple />
 
         <div class="grid-two">
           <div>
@@ -380,13 +432,25 @@
         <label for="treatment">Recent treatment</label>
         <input id="treatment" value="None recorded" />
 
+        <label for="sensorData">Sensor / weather readings</label>
+        <textarea id="sensorData">soil_moisture_percent: 28
+air_temperature_c: 34
+humidity_percent: 42
+rainfall_mm: 0</textarea>
+
         <label for="notes">Observation</label>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
         <div class="actions">
           <button id="generate">Generate Report</button>
           <button id="download" class="secondary">Download Report</button>
+          <button id="saveReport" class="secondary">Save Record</button>
+          <button id="exportHistory" class="warning">Export History</button>
         </div>
+        <div id="statusLine" class="status-line"></div>
+
+        <h3>Saved Records</h3>
+        <div id="savedList" class="saved-list"></div>
       </section>
 
       <section class="report" aria-label="Inspection report">
@@ -406,6 +470,9 @@
 
             <h3>Observations</h3>
             <ul id="outObservations"></ul>
+
+            <h3>Sensor Notes</h3>
+            <ul id="outSensors"></ul>
 
             <h3>Likely Causes</h3>
             <div id="outCauses" class="causes"></div>
@@ -438,11 +505,16 @@
       const weatherEl = document.getElementById("weather");
       const irrigationEl = document.getElementById("irrigation");
       const treatmentEl = document.getElementById("treatment");
+      const sensorDataEl = document.getElementById("sensorData");
       const notesEl = document.getElementById("notes");
       const photoEl = document.getElementById("photo");
       const previewEl = document.getElementById("preview");
       const sideImageEl = document.getElementById("sideImage");
       const sideNoteEl = document.getElementById("sideNote");
+      const savedListEl = document.getElementById("savedList");
+      const statusLineEl = document.getElementById("statusLine");
+      const storageKey = "aiFarmCopilotRecords";
+      let loadedPhotos = [];
 
       const scenarioDefaults = {
         vineyard: {
@@ -453,6 +525,7 @@
           weather: "Hot week, no rain, windy afternoons",
           irrigation: "Drip, last irrigated 3 days ago",
           treatment: "None recorded",
+          sensorData: "soil_moisture_percent: 28\nair_temperature_c: 34\nhumidity_percent: 42\nrainfall_mm: 0",
           notes: "Lower leaves yellowing on several vines, some curling at the edges.",
           causes: [
             ["Water stress", "Heat, wind, and leaf curl point to possible water stress."],
@@ -475,6 +548,7 @@
           weather: "Recent heatwave after wet spring",
           irrigation: "Micro-sprinklers, twice weekly",
           treatment: "Light fertilizer two weeks ago",
+          sensorData: "soil_moisture_percent: unknown\nair_temperature_c: 32\nhumidity_percent: 58\nrainfall_mm_last_7_days: 42",
           notes: "Leaves on the south side of several trees look curled and pale.",
           causes: [
             ["Heat exposure", "South-facing canopy stress can follow hot, bright weather."],
@@ -497,6 +571,7 @@
           weather: "Hot afternoons, no rain for 8 days",
           irrigation: "Automatic sprinklers nightly",
           treatment: "Mowed yesterday",
+          sensorData: "soil_moisture_percent: 19\nsurface_temperature_c: 36\nrainfall_mm_last_8_days: 0\ntraffic: high",
           notes: "Irregular yellow-brown patches, worse on high-traffic area.",
           causes: [
             ["Localized dry spot", "Irregular patches and heat may indicate water repellency."],
@@ -519,6 +594,7 @@
           weather: "Warm and humid",
           irrigation: "Watered every morning",
           treatment: "No sprays",
+          sensorData: "soil_moisture: damp by touch\nair_temperature_c: 29\nhumidity_percent: 74\nsunlight: partial",
           notes: "Yellow lower leaves and a few brown spots.",
           causes: [
             ["Overwatering or poor drainage", "Damp soil and daily watering can stress roots."],
@@ -556,11 +632,40 @@
         });
       }
 
+      function parseSensorNotes(text) {
+        const rows = text
+          .split(/\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, 8);
+
+        return rows.length ? rows : ["No sensor readings provided."];
+      }
+
+      function getRecords() {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey) || "[]");
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function setRecords(records) {
+        localStorage.setItem(storageKey, JSON.stringify(records.slice(0, 25)));
+      }
+
+      function showStatus(message) {
+        statusLineEl.textContent = message;
+        window.setTimeout(() => {
+          if (statusLineEl.textContent === message) statusLineEl.textContent = "";
+        }, 2800);
+      }
+
       function inferRisk() {
         const manual = riskInputEl.value;
         if (manual !== "auto") return manual;
 
-        const text = `${notesEl.value} ${weatherEl.value} ${soilEl.value}`.toLowerCase();
+        const text = `${notesEl.value} ${weatherEl.value} ${soilEl.value} ${sensorDataEl.value}`.toLowerCase();
         const highWords = ["spreading", "dead", "severe", "large area", "rapid", "wilting", "disease"];
         const mediumWords = ["yellow", "brown", "curl", "patch", "dry", "hot", "spots", "pale"];
 
@@ -584,6 +689,7 @@
         const risk = inferRisk();
         const follow = followUpForRisk(risk);
         const observations = sentenceList(notesEl.value || "No observation provided.");
+        const sensors = parseSensorNotes(sensorDataEl.value);
         const context = [
           `Scenario: ${defaults.label}`,
           `Managed area: ${cropEl.value || defaults.crop}`,
@@ -591,7 +697,8 @@
           `Weather: ${weatherEl.value || "Not provided"}`,
           `Irrigation / watering: ${irrigationEl.value || "Not provided"}`,
           `Soil moisture: ${soilEl.value || "Not provided"}`,
-          `Recent treatment: ${treatmentEl.value || "Not provided"}`
+          `Recent treatment: ${treatmentEl.value || "Not provided"}`,
+          `Photos loaded: ${loadedPhotos.length}`
         ];
         const dont = [
           "Do not make chemical or major irrigation decisions from this demo report alone.",
@@ -608,6 +715,7 @@
 
         setList("outContext", context);
         setList("outObservations", observations);
+        setList("outSensors", sensors);
         setList("outActions", defaults.actions);
         setList("outDont", dont);
 
@@ -629,6 +737,9 @@
           "## Observations",
           ...observations.map((item) => `- ${item}`),
           "",
+          "## Sensor Notes",
+          ...sensors.map((item) => `- ${item}`),
+          "",
           `## Risk Level`,
           `**Overall risk:** ${riskLabel(risk)}`,
           `**Follow-up:** ${follow}`,
@@ -645,6 +756,24 @@
           "## Professional Review",
           "Use this report as scouting support. Review high-risk decisions with a qualified local professional."
         ].join("\n");
+
+        return {
+          id: Date.now(),
+          createdAt: new Date().toISOString(),
+          scenario: defaults.label,
+          crop: cropEl.value || defaults.crop,
+          area: areaEl.value || "",
+          risk: riskLabel(risk),
+          followUp: follow,
+          weather: weatherEl.value || "",
+          irrigation: irrigationEl.value || "",
+          soil: soilEl.value || "",
+          treatment: treatmentEl.value || "",
+          sensorData: sensorDataEl.value || "",
+          observation: notesEl.value || "",
+          photoCount: loadedPhotos.length,
+          report: latestReport
+        };
       }
 
       function applyScenarioDefaults() {
@@ -655,6 +784,7 @@
         weatherEl.value = defaults.weather;
         irrigationEl.value = defaults.irrigation;
         treatmentEl.value = defaults.treatment;
+        sensorDataEl.value = defaults.sensorData;
         notesEl.value = defaults.notes;
         buildReport();
       }
@@ -673,25 +803,91 @@
         URL.revokeObjectURL(url);
       }
 
+      function saveRecord() {
+        const record = buildReport();
+        const records = getRecords();
+        records.unshift(record);
+        setRecords(records);
+        renderSavedRecords();
+        showStatus("Inspection record saved locally.");
+      }
+
+      function exportHistory() {
+        const records = getRecords();
+        const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const stamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `ai-farm-copilot-history-${stamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showStatus(`${records.length} saved records exported.`);
+      }
+
+      function loadRecord(record) {
+        const key = Object.keys(scenarioDefaults).find((item) => scenarioDefaults[item].label === record.scenario) || "vineyard";
+        scenarioEl.value = key;
+        cropEl.value = record.crop;
+        areaEl.value = record.area;
+        weatherEl.value = record.weather;
+        irrigationEl.value = record.irrigation;
+        soilEl.value = record.soil;
+        treatmentEl.value = record.treatment;
+        sensorDataEl.value = record.sensorData;
+        notesEl.value = record.observation;
+        riskInputEl.value = record.risk.toLowerCase();
+        buildReport();
+        showStatus("Saved record loaded.");
+      }
+
+      function renderSavedRecords() {
+        const records = getRecords();
+        savedListEl.innerHTML = "";
+        if (!records.length) {
+          const empty = document.createElement("div");
+          empty.className = "status-line";
+          empty.textContent = "No saved records yet.";
+          savedListEl.appendChild(empty);
+          return;
+        }
+
+        records.slice(0, 6).forEach((record) => {
+          const button = document.createElement("button");
+          button.className = "saved-item";
+          button.type = "button";
+          const date = new Date(record.createdAt).toLocaleString();
+          button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
+          button.addEventListener("click", () => loadRecord(record));
+          savedListEl.appendChild(button);
+        });
+      }
+
       photoEl.addEventListener("change", () => {
-        const file = photoEl.files && photoEl.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        previewEl.innerHTML = `<img alt="Uploaded field preview" src="${url}" />`;
-        sideImageEl.innerHTML = `<img alt="Uploaded field preview" src="${url}" />`;
-        sideNoteEl.textContent = `${file.name} is loaded locally for this demo. No image data leaves the browser.`;
+        const files = Array.from(photoEl.files || []).slice(0, 6);
+        if (!files.length) return;
+        loadedPhotos.forEach((photo) => URL.revokeObjectURL(photo.url));
+        loadedPhotos = files.map((file) => ({ name: file.name, url: URL.createObjectURL(file) }));
+        previewEl.innerHTML = loadedPhotos.map((photo) => `<img alt="Uploaded field preview" src="${photo.url}" />`).join("");
+        sideImageEl.innerHTML = loadedPhotos.slice(0, 3).map((photo) => `<img alt="Uploaded field preview" src="${photo.url}" />`).join("");
+        sideNoteEl.textContent = `${loadedPhotos.length} image(s) loaded locally. No image data leaves the browser.`;
+        buildReport();
       });
 
       scenarioEl.addEventListener("change", applyScenarioDefaults);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
+      document.getElementById("saveReport").addEventListener("click", saveRecord);
+      document.getElementById("exportHistory").addEventListener("click", exportHistory);
 
-      [riskInputEl, cropEl, areaEl, soilEl, weatherEl, irrigationEl, treatmentEl, notesEl].forEach((node) => {
+      [riskInputEl, cropEl, areaEl, soilEl, weatherEl, irrigationEl, treatmentEl, sensorDataEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);
       });
 
       buildReport();
+      renderSavedRecords();
     </script>
   </body>
 </html>
-

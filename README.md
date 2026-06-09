@@ -40,13 +40,16 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.1 demo supports:
+The V0.2 demo supports:
 
-- Local image upload and preview.
+- Local multi-image upload and preview.
 - Scenario-specific defaults for vineyard, orchard, golf turf, and home garden.
+- Sensor and weather reading notes.
 - Dynamic risk level and follow-up timing.
 - Structured report generation.
 - Markdown report download.
+- Local saved inspection records.
+- JSON history export.
 
 ## Example Prompt
 
@@ -88,7 +91,8 @@ ai-farm-copilot/
 
 - V0: agent skill, examples, local demo, CSV templates.
 - V0.1: image preview, richer reports, markdown export.
-- V0.2: image intake checklist and weather API adapter.
+- V0.2: multi-image preview, sensor notes, local saved records, JSON history export.
+- V0.3: image intake checklist and weather API adapter.
 - V0.2: camera and drone photo batch workflow.
 - V0.3: ESP32/Raspberry Pi sensor JSON adapter.
 - V0.4: NDVI and map-based scouting notes.
