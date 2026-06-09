@@ -343,6 +343,82 @@
         background: #edf7f0;
       }
 
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .dashboard-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fbfcfa;
+      }
+
+      .dashboard-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dashboard-card strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 20px;
+      }
+
+      .area-health {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .health-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: white;
+      }
+
+      .health-card strong,
+      .health-card span {
+        display: block;
+      }
+
+      .health-card span {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .risk-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin-top: 10px;
+      }
+
+      .risk-segment {
+        height: 8px;
+        border-radius: 999px;
+        background: #e2e8e2;
+      }
+
+      .risk-segment.low.active {
+        background: var(--ok);
+      }
+
+      .risk-segment.medium.active {
+        background: var(--warning);
+      }
+
+      .risk-segment.high.active {
+        background: var(--danger);
+      }
+
       .status-line {
         min-height: 18px;
         margin-top: 10px;
@@ -357,6 +433,8 @@
         }
 
         .meta,
+        .dashboard,
+        .area-health,
         .causes {
           grid-template-columns: 1fr 1fr;
         }
@@ -370,6 +448,8 @@
         .grid-two,
         .actions,
         .meta,
+        .dashboard,
+        .area-health,
         .causes {
           grid-template-columns: 1fr;
         }
@@ -385,7 +465,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.3 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.4 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -484,6 +564,18 @@ rainfall_mm: 0</textarea>
       </section>
 
       <section class="report" aria-label="Inspection report">
+        <h2>Monitoring Dashboard</h2>
+
+        <div class="dashboard">
+          <div class="dashboard-card"><span>Managed areas</span><strong id="dashAreas">4</strong></div>
+          <div class="dashboard-card"><span>Total records</span><strong id="dashRecords">0</strong></div>
+          <div class="dashboard-card"><span>High-risk records</span><strong id="dashHighRisk">0</strong></div>
+          <div class="dashboard-card"><span>Latest risk</span><strong id="dashLatestRisk">None</strong></div>
+        </div>
+
+        <h3>Area Health</h3>
+        <div id="areaHealth" class="area-health"></div>
+
         <h2>Inspection Report</h2>
 
         <div class="meta">
@@ -549,6 +641,7 @@ rainfall_mm: 0</textarea>
       const sideImageEl = document.getElementById("sideImage");
       const sideNoteEl = document.getElementById("sideNote");
       const areaListEl = document.getElementById("areaList");
+      const areaHealthEl = document.getElementById("areaHealth");
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedListEl = document.getElementById("savedList");
@@ -747,6 +840,7 @@ rainfall_mm: 0</textarea>
           areaEl.value = area.size;
         }
         renderManagedAreas();
+        renderDashboard();
         updateAreaSummary();
         buildReport();
       }
@@ -797,6 +891,58 @@ rainfall_mm: 0</textarea>
         document.getElementById("outAreaSize").textContent = area.size;
         document.getElementById("outAreaRecords").textContent = String(records.length);
         document.getElementById("outAreaRisk").textContent = records[0] ? records[0].risk : "None";
+      }
+
+      function riskRank(risk) {
+        const normalized = (risk || "").toLowerCase();
+        if (normalized === "high") return 3;
+        if (normalized === "medium") return 2;
+        if (normalized === "low") return 1;
+        return 0;
+      }
+
+      function highestRisk(records) {
+        return records.reduce((highest, record) => {
+          return riskRank(record.risk) > riskRank(highest) ? record.risk : highest;
+        }, "None");
+      }
+
+      function riskClass(risk) {
+        return `risk-${(risk || "none").toLowerCase()}`;
+      }
+
+      function renderDashboard() {
+        const areas = getAreas();
+        const records = getRecords();
+        const latest = records[0];
+        const highRiskCount = records.filter((record) => record.risk === "High").length;
+
+        document.getElementById("dashAreas").textContent = String(areas.length);
+        document.getElementById("dashRecords").textContent = String(records.length);
+        document.getElementById("dashHighRisk").textContent = String(highRiskCount);
+        document.getElementById("dashLatestRisk").textContent = latest ? latest.risk : "None";
+
+        areaHealthEl.innerHTML = "";
+        areas.slice(0, 6).forEach((area) => {
+          const areaRecords = records.filter((record) => record.areaId === area.id);
+          const risk = highestRisk(areaRecords);
+          const latestRecord = areaRecords[0];
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "health-card";
+          card.innerHTML = `
+            <strong>${area.name}</strong>
+            <span>${areaRecords.length} record(s) · highest risk: <b class="${riskClass(risk)}">${risk}</b></span>
+            <span>${latestRecord ? `Latest: ${new Date(latestRecord.createdAt).toLocaleDateString()}` : "No saved inspections yet"}</span>
+            <div class="risk-bar" aria-hidden="true">
+              <div class="risk-segment low${riskRank(risk) >= 1 ? " active" : ""}"></div>
+              <div class="risk-segment medium${riskRank(risk) >= 2 ? " active" : ""}"></div>
+              <div class="risk-segment high${riskRank(risk) >= 3 ? " active" : ""}"></div>
+            </div>
+          `;
+          card.addEventListener("click", () => selectManagedArea(area.id));
+          areaHealthEl.appendChild(card);
+        });
       }
 
       function inferRisk() {
@@ -952,6 +1098,7 @@ rainfall_mm: 0</textarea>
         setRecords(records);
         renderManagedAreas();
         renderSavedRecords();
+        renderDashboard();
         updateAreaSummary();
         showStatus("Inspection record saved locally.");
       }
@@ -987,6 +1134,7 @@ rainfall_mm: 0</textarea>
         riskInputEl.value = record.risk.toLowerCase();
         buildReport();
         renderManagedAreas();
+        renderDashboard();
         updateAreaSummary();
         showStatus("Saved record loaded.");
       }
@@ -1038,6 +1186,7 @@ rainfall_mm: 0</textarea>
       buildReport();
       renderManagedAreas();
       renderSavedRecords();
+      renderDashboard();
       updateAreaSummary();
     </script>
   </body>

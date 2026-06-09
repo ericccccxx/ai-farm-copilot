@@ -40,10 +40,12 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.3 demo supports:
+The V0.4 demo supports:
 
 - Local multi-image upload and preview.
 - Managed area records for vineyard blocks, orchard sections, golf zones, and garden beds.
+- Monitoring dashboard with area counts, record counts, high-risk count, and latest risk.
+- Area health cards with risk bars and recent inspection status.
 - Scenario-specific defaults for vineyard, orchard, golf turf, and home garden.
 - Sensor and weather reading notes.
 - Dynamic risk level and follow-up timing.
@@ -94,10 +96,11 @@ ai-farm-copilot/
 - V0.1: image preview, richer reports, markdown export.
 - V0.2: multi-image preview, sensor notes, local saved records, JSON history export.
 - V0.3: managed area records and area-level inspection summaries.
-- V0.4: image intake checklist and weather API adapter.
-- V0.5: camera and drone photo batch workflow.
-- V0.6: ESP32/Raspberry Pi sensor JSON adapter.
-- V0.7: NDVI and map-based scouting notes.
+- V0.4: monitoring dashboard and area health summaries.
+- V0.5: image intake checklist and weather API adapter.
+- V0.6: camera and drone photo batch workflow.
+- V0.7: ESP32/Raspberry Pi sensor JSON adapter.
+- V0.8: NDVI and map-based scouting notes.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.
