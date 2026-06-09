@@ -139,6 +139,12 @@ Success metric:
 - Show recent risk movement from local history.
 - Keep the chart browser-only and compatible with GitHub Pages.
 
+## V0.17: Dashboard Scope Filters
+
+- Add dashboard scope filtering for all areas, current selected area, and specific managed areas.
+- Update dashboard metrics, risk trend, and area health cards based on the selected scope.
+- Keep filtering local and browser-only.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

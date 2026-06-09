@@ -387,6 +387,18 @@
         margin-bottom: 18px;
       }
 
+      .dashboard-filter {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: 10px;
+        align-items: end;
+        margin-bottom: 14px;
+      }
+
+      .dashboard-filter label {
+        margin-top: 0;
+      }
+
       .dashboard-card {
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -532,6 +544,7 @@
 
         .grid-two,
         .actions,
+        .dashboard-filter,
         .meta,
         .dashboard,
         .trend-labels,
@@ -602,7 +615,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.16 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.17 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -755,6 +768,14 @@ rainfall_mm: 0</textarea>
       <section class="report" aria-label="Inspection report">
         <h2>Monitoring Dashboard</h2>
 
+        <div class="dashboard-filter">
+          <label for="dashboardAreaFilter">Dashboard Scope</label>
+          <select id="dashboardAreaFilter">
+            <option value="all">All areas</option>
+            <option value="current">Current selected area</option>
+          </select>
+        </div>
+
         <div class="dashboard">
           <div class="dashboard-card"><span>Managed areas</span><strong id="dashAreas">4</strong></div>
           <div class="dashboard-card"><span>Total records</span><strong id="dashRecords">0</strong></div>
@@ -860,6 +881,7 @@ rainfall_mm: 0</textarea>
       const areaListEl = document.getElementById("areaList");
       const areaHealthEl = document.getElementById("areaHealth");
       const riskTrendEl = document.getElementById("riskTrend");
+      const dashboardAreaFilterEl = document.getElementById("dashboardAreaFilter");
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedListEl = document.getElementById("savedList");
@@ -1594,6 +1616,38 @@ rainfall_mm: 0</textarea>
         return `risk-${(risk || "none").toLowerCase()}`;
       }
 
+      function renderDashboardFilter(areas) {
+        const selectedValue = dashboardAreaFilterEl.value || "all";
+        const options = [
+          ["all", "All areas"],
+          ["current", "Current selected area"],
+          ...areas.map((area) => [area.id, area.name])
+        ];
+        dashboardAreaFilterEl.innerHTML = "";
+        options.forEach(([value, label]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          dashboardAreaFilterEl.appendChild(option);
+        });
+        dashboardAreaFilterEl.value = options.some(([value]) => value === selectedValue) ? selectedValue : "all";
+      }
+
+      function dashboardScope(areas, records) {
+        const filter = dashboardAreaFilterEl.value || "all";
+        if (filter === "all") {
+          return { areas, records, label: "All areas" };
+        }
+
+        const areaId = filter === "current" ? selectedAreaId : filter;
+        const area = areas.find((item) => item.id === areaId) || getSelectedArea();
+        return {
+          areas: [area],
+          records: records.filter((record) => record.areaId === area.id),
+          label: area.name
+        };
+      }
+
       function renderRiskTrend(records) {
         const recent = records.slice(0, 8).reverse();
         if (!recent.length) {
@@ -1640,19 +1694,22 @@ rainfall_mm: 0</textarea>
 
       function renderDashboard() {
         const areas = getAreas();
-        const records = getRecords();
+        const allRecords = getRecords();
+        renderDashboardFilter(areas);
+        const scope = dashboardScope(areas, allRecords);
+        const records = scope.records;
         const latest = records[0];
         const highRiskCount = records.filter((record) => record.risk === "High").length;
 
-        document.getElementById("dashAreas").textContent = String(areas.length);
+        document.getElementById("dashAreas").textContent = String(scope.areas.length);
         document.getElementById("dashRecords").textContent = String(records.length);
         document.getElementById("dashHighRisk").textContent = String(highRiskCount);
         document.getElementById("dashLatestRisk").textContent = latest ? latest.risk : "None";
         renderRiskTrend(records);
 
         areaHealthEl.innerHTML = "";
-        areas.slice(0, 6).forEach((area) => {
-          const areaRecords = records.filter((record) => record.areaId === area.id);
+        scope.areas.slice(0, 6).forEach((area) => {
+          const areaRecords = allRecords.filter((record) => record.areaId === area.id);
           const risk = highestRisk(areaRecords);
           const latestRecord = areaRecords[0];
           const card = document.createElement("button");
@@ -2068,6 +2125,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("saveReport").addEventListener("click", saveRecord);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);
+      dashboardAreaFilterEl.addEventListener("change", renderDashboard);
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);
