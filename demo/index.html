@@ -305,7 +305,14 @@
         margin-top: 12px;
       }
 
-      .saved-item {
+      .area-list {
+        display: grid;
+        gap: 9px;
+        margin: 12px 0 16px;
+      }
+
+      .saved-item,
+      .area-item {
         width: 100%;
         min-height: auto;
         border: 1px solid var(--line);
@@ -318,14 +325,22 @@
       }
 
       .saved-item strong,
-      .saved-item span {
+      .saved-item span,
+      .area-item strong,
+      .area-item span {
         display: block;
       }
 
-      .saved-item span {
+      .saved-item span,
+      .area-item span {
         margin-top: 4px;
         color: var(--muted);
         font-size: 12px;
+      }
+
+      .area-item.active {
+        border-color: var(--canopy);
+        background: #edf7f0;
       }
 
       .status-line {
@@ -370,7 +385,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved scouting reports. This V0.2 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.3 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -387,6 +402,21 @@
 
         <label for="photo">Photos</label>
         <input id="photo" type="file" accept="image/*" multiple />
+
+        <h3>Managed Area</h3>
+        <div id="areaList" class="area-list"></div>
+
+        <div class="grid-two">
+          <div>
+            <label for="newAreaName">New area name</label>
+            <input id="newAreaName" placeholder="Vineyard Block A" />
+          </div>
+          <div>
+            <label for="newAreaSize">New area size</label>
+            <input id="newAreaSize" placeholder="1.2 hectares" />
+          </div>
+        </div>
+        <button id="addArea" class="secondary" type="button">Add Managed Area</button>
 
         <div class="grid-two">
           <div>
@@ -463,6 +493,13 @@ rainfall_mm: 0</textarea>
           <div class="metric"><span>Follow-up</span><strong id="outFollow">48-72 hours</strong></div>
         </div>
 
+        <div class="meta">
+          <div class="metric"><span>Area record</span><strong id="outAreaName">Vineyard Block A</strong></div>
+          <div class="metric"><span>Area size</span><strong id="outAreaSize">1.2 hectares</strong></div>
+          <div class="metric"><span>Records here</span><strong id="outAreaRecords">0</strong></div>
+          <div class="metric"><span>Last saved risk</span><strong id="outAreaRisk">None</strong></div>
+        </div>
+
         <div class="report-layout">
           <div>
             <h3>Context</h3>
@@ -511,10 +548,16 @@ rainfall_mm: 0</textarea>
       const previewEl = document.getElementById("preview");
       const sideImageEl = document.getElementById("sideImage");
       const sideNoteEl = document.getElementById("sideNote");
+      const areaListEl = document.getElementById("areaList");
+      const newAreaNameEl = document.getElementById("newAreaName");
+      const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedListEl = document.getElementById("savedList");
       const statusLineEl = document.getElementById("statusLine");
       const storageKey = "aiFarmCopilotRecords";
+      const areasKey = "aiFarmCopilotAreas";
+      const selectedAreaKey = "aiFarmCopilotSelectedArea";
       let loadedPhotos = [];
+      let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
 
       const scenarioDefaults = {
         vineyard: {
@@ -654,11 +697,106 @@ rainfall_mm: 0</textarea>
         localStorage.setItem(storageKey, JSON.stringify(records.slice(0, 25)));
       }
 
+      function defaultAreas() {
+        return [
+          { id: "vineyard-block-a", name: "Vineyard Block A", scenario: "vineyard", crop: "Cabernet Sauvignon", size: "1.2 hectares" },
+          { id: "orchard-north", name: "North Orchard", scenario: "orchard", crop: "Apple trees", size: "0.8 hectares" },
+          { id: "golf-zone-4", name: "Golf Sprinkler Zone 4", scenario: "golf", crop: "Fairway turf", size: "Zone 4" },
+          { id: "garden-bed-2", name: "Garden Bed 2", scenario: "garden", crop: "Tomato plant", size: "Raised bed" }
+        ];
+      }
+
+      function getAreas() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(areasKey) || "[]");
+          return stored.length ? stored : defaultAreas();
+        } catch (error) {
+          return defaultAreas();
+        }
+      }
+
+      function setAreas(areas) {
+        localStorage.setItem(areasKey, JSON.stringify(areas));
+      }
+
+      function getSelectedArea() {
+        const areas = getAreas();
+        return areas.find((area) => area.id === selectedAreaId) || areas[0];
+      }
+
+      function slugify(value) {
+        return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `area-${Date.now()}`;
+      }
+
       function showStatus(message) {
         statusLineEl.textContent = message;
         window.setTimeout(() => {
           if (statusLineEl.textContent === message) statusLineEl.textContent = "";
         }, 2800);
+      }
+
+      function selectManagedArea(areaId, applyDefaults = true) {
+        const area = getAreas().find((item) => item.id === areaId);
+        if (!area) return;
+        selectedAreaId = area.id;
+        localStorage.setItem(selectedAreaKey, selectedAreaId);
+        if (applyDefaults) {
+          scenarioEl.value = area.scenario;
+          applyScenarioDefaults();
+          cropEl.value = area.crop;
+          areaEl.value = area.size;
+        }
+        renderManagedAreas();
+        updateAreaSummary();
+        buildReport();
+      }
+
+      function addManagedArea() {
+        const name = newAreaNameEl.value.trim();
+        if (!name) {
+          showStatus("Add a managed area name first.");
+          return;
+        }
+
+        const defaults = scenarioDefaults[scenarioEl.value];
+        const areas = getAreas();
+        const area = {
+          id: `${slugify(name)}-${Date.now()}`,
+          name,
+          scenario: scenarioEl.value,
+          crop: cropEl.value || defaults.crop,
+          size: newAreaSizeEl.value.trim() || areaEl.value || defaults.area
+        };
+        areas.unshift(area);
+        setAreas(areas);
+        newAreaNameEl.value = "";
+        newAreaSizeEl.value = "";
+        selectManagedArea(area.id, false);
+        showStatus("Managed area added.");
+      }
+
+      function renderManagedAreas() {
+        const areas = getAreas();
+        const records = getRecords();
+        areaListEl.innerHTML = "";
+        areas.slice(0, 6).forEach((area) => {
+          const count = records.filter((record) => record.areaId === area.id).length;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `area-item${area.id === selectedAreaId ? " active" : ""}`;
+          button.innerHTML = `<strong>${area.name}</strong><span>${scenarioDefaults[area.scenario].label} · ${area.crop} · ${count} record(s)</span>`;
+          button.addEventListener("click", () => selectManagedArea(area.id));
+          areaListEl.appendChild(button);
+        });
+      }
+
+      function updateAreaSummary() {
+        const area = getSelectedArea();
+        const records = getRecords().filter((record) => record.areaId === area.id);
+        document.getElementById("outAreaName").textContent = area.name;
+        document.getElementById("outAreaSize").textContent = area.size;
+        document.getElementById("outAreaRecords").textContent = String(records.length);
+        document.getElementById("outAreaRisk").textContent = records[0] ? records[0].risk : "None";
       }
 
       function inferRisk() {
@@ -686,11 +824,13 @@ rainfall_mm: 0</textarea>
 
       function buildReport() {
         const defaults = scenarioDefaults[scenarioEl.value];
+        const selectedArea = getSelectedArea();
         const risk = inferRisk();
         const follow = followUpForRisk(risk);
         const observations = sentenceList(notesEl.value || "No observation provided.");
         const sensors = parseSensorNotes(sensorDataEl.value);
         const context = [
+          `Managed area record: ${selectedArea.name}`,
           `Scenario: ${defaults.label}`,
           `Managed area: ${cropEl.value || defaults.crop}`,
           `Area size: ${areaEl.value || "Not provided"}`,
@@ -760,6 +900,8 @@ rainfall_mm: 0</textarea>
         return {
           id: Date.now(),
           createdAt: new Date().toISOString(),
+          areaId: selectedArea.id,
+          areaName: selectedArea.name,
           scenario: defaults.label,
           crop: cropEl.value || defaults.crop,
           area: areaEl.value || "",
@@ -808,7 +950,9 @@ rainfall_mm: 0</textarea>
         const records = getRecords();
         records.unshift(record);
         setRecords(records);
+        renderManagedAreas();
         renderSavedRecords();
+        updateAreaSummary();
         showStatus("Inspection record saved locally.");
       }
 
@@ -829,6 +973,8 @@ rainfall_mm: 0</textarea>
 
       function loadRecord(record) {
         const key = Object.keys(scenarioDefaults).find((item) => scenarioDefaults[item].label === record.scenario) || "vineyard";
+        selectedAreaId = record.areaId || selectedAreaId;
+        localStorage.setItem(selectedAreaKey, selectedAreaId);
         scenarioEl.value = key;
         cropEl.value = record.crop;
         areaEl.value = record.area;
@@ -840,6 +986,8 @@ rainfall_mm: 0</textarea>
         notesEl.value = record.observation;
         riskInputEl.value = record.risk.toLowerCase();
         buildReport();
+        renderManagedAreas();
+        updateAreaSummary();
         showStatus("Saved record loaded.");
       }
 
@@ -859,7 +1007,7 @@ rainfall_mm: 0</textarea>
           button.className = "saved-item";
           button.type = "button";
           const date = new Date(record.createdAt).toLocaleString();
-          button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
+          button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.areaName || record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
           button.addEventListener("click", () => loadRecord(record));
           savedListEl.appendChild(button);
         });
@@ -877,6 +1025,7 @@ rainfall_mm: 0</textarea>
       });
 
       scenarioEl.addEventListener("change", applyScenarioDefaults);
+      document.getElementById("addArea").addEventListener("click", addManagedArea);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
@@ -887,7 +1036,9 @@ rainfall_mm: 0</textarea>
       });
 
       buildReport();
+      renderManagedAreas();
       renderSavedRecords();
+      updateAreaSummary();
     </script>
   </body>
 </html>

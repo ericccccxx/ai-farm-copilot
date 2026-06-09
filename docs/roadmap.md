@@ -37,7 +37,14 @@ Success metric:
 - Add saved record loading.
 - Add JSON history export.
 
-## V0.3: Photo Intake and Weather
+## V0.3: Managed Areas
+
+- Add default managed areas.
+- Add custom managed area creation.
+- Attach saved inspection records to managed areas.
+- Add area-level record count and latest risk summary.
+
+## V0.4: Photo Intake and Weather
 
 - Improve photo intake checklist.
 - Add multi-photo comparison workflow.
@@ -46,14 +53,14 @@ Success metric:
 - Add irrigation schedule template.
 - Add weekly field summary workflow.
 
-## V0.4: Camera and Drone Workflow
+## V0.5: Camera and Drone Workflow
 
 - Add batch photo naming convention.
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
 
-## V0.5: Sensor Kit Support
+## V0.6: Sensor Kit Support
 
 - Add ESP32 JSON template.
 - Add Raspberry Pi camera workflow.
