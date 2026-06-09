@@ -163,6 +163,12 @@ Success metric:
 - Sort saved records by newest, oldest, highest risk, and lowest risk.
 - Keep sorting compatible with saved record search.
 
+## V0.21: Saved Record Quick Filters
+
+- Add quick filters for all saved records, high-risk records, current area, and recent 7 days.
+- Keep quick filters compatible with saved record sorting.
+- Make manual search return to normal search behavior.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

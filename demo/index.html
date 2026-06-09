@@ -516,6 +516,21 @@
         margin-top: 8px;
       }
 
+      .quick-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .quick-filter {
+        min-height: 32px;
+        padding: 8px 10px;
+        color: var(--canopy-dark);
+        background: #e8f2ec;
+        font-size: 12px;
+      }
+
       .agent-prompt {
         margin-top: 22px;
         border-top: 1px solid var(--line);
@@ -623,7 +638,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.20 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.21 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -779,6 +794,12 @@ rainfall_mm: 0</textarea>
             <option value="riskLow">Risk low</option>
           </select>
         </div>
+        <div class="quick-filters" aria-label="Saved record quick filters">
+          <button class="quick-filter" type="button" data-filter="all">All</button>
+          <button class="quick-filter" type="button" data-filter="high">High Risk</button>
+          <button class="quick-filter" type="button" data-filter="current">Current Area</button>
+          <button class="quick-filter" type="button" data-filter="recent">Recent 7 Days</button>
+        </div>
         <div id="savedList" class="saved-list"></div>
       </section>
 
@@ -922,6 +943,7 @@ rainfall_mm: 0</textarea>
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
       let loadedPhotos = [];
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
+      let savedQuickFilter = "all";
       const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
       const roleMatchers = [
         [/affected|stress|disease|problem|issue/i, "Affected area"],
@@ -2113,6 +2135,24 @@ rainfall_mm: 0</textarea>
         return haystack.includes(query);
       }
 
+      function recordMatchesQuickFilter(record) {
+        if (savedQuickFilter === "recent") {
+          const createdAt = new Date(record.createdAt).getTime();
+          const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          return Number.isFinite(createdAt) && createdAt >= sevenDaysAgo;
+        }
+        return true;
+      }
+
+      function applySavedQuickFilter(filter) {
+        savedQuickFilter = filter;
+        if (filter === "all") savedSearchEl.value = "";
+        if (filter === "high") savedSearchEl.value = "High";
+        if (filter === "current") savedSearchEl.value = getSelectedArea().name;
+        if (filter === "recent") savedSearchEl.value = "";
+        renderSavedRecords();
+      }
+
       function sortSavedRecords(records) {
         const mode = savedSortEl.value || "newest";
         return [...records].sort((a, b) => {
@@ -2126,7 +2166,7 @@ rainfall_mm: 0</textarea>
       function renderSavedRecords() {
         const query = savedSearchEl.value.trim().toLowerCase();
         const records = getRecords();
-        const visibleRecords = sortSavedRecords(records.filter((record) => recordMatchesSearch(record, query)));
+        const visibleRecords = sortSavedRecords(records.filter((record) => recordMatchesSearch(record, query) && recordMatchesQuickFilter(record)));
         savedListEl.innerHTML = "";
         if (!records.length) {
           const empty = document.createElement("div");
@@ -2204,8 +2244,14 @@ rainfall_mm: 0</textarea>
       document.getElementById("clearData").addEventListener("click", clearLocalData);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
       dashboardRiskFilterEl.addEventListener("change", renderDashboard);
-      savedSearchEl.addEventListener("input", renderSavedRecords);
+      savedSearchEl.addEventListener("input", () => {
+        savedQuickFilter = "all";
+        renderSavedRecords();
+      });
       savedSortEl.addEventListener("change", renderSavedRecords);
+      document.querySelectorAll(".quick-filter").forEach((button) => {
+        button.addEventListener("click", () => applySavedQuickFilter(button.dataset.filter));
+      });
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);
