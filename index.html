@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="AI Farm Copilot is an open-source AI farm and garden assistant for vineyards, orchards, golf turf, hobby farms, and home gardens."
+    />
+    <title>AI Farm Copilot</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --leaf: #1f6b4a;
+        --leaf-dark: #113d30;
+        --mint: #eaf4ef;
+        --field: #f6f7f0;
+        --gold: #d9a441;
+        --soil: #5b4638;
+        --water: #3e6f8f;
+        --ink: #16211d;
+        --muted: #61736a;
+        --line: #d8e0d9;
+        --paper: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--ink);
+        background: var(--field);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .hero {
+        min-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        color: white;
+        background:
+          linear-gradient(90deg, rgba(17, 61, 48, 0.94), rgba(31, 107, 74, 0.58) 54%, rgba(22, 33, 29, 0.16)),
+          url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1800&q=82");
+        background-size: cover;
+        background-position: center;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 20px clamp(18px, 5vw, 72px);
+      }
+
+      .brand {
+        font-size: 17px;
+        font-weight: 800;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 14px;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+      }
+
+      .hero-content {
+        width: min(1120px, calc(100% - 36px));
+        margin: auto;
+        padding: 48px 0 78px;
+      }
+
+      h1 {
+        max-width: 820px;
+        margin: 0;
+        font-size: clamp(42px, 7vw, 82px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .hero-copy {
+        max-width: 700px;
+        margin: 22px 0 0;
+        font-size: clamp(17px, 2vw, 22px);
+        line-height: 1.48;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 13px 18px;
+        border-radius: 6px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .button.primary {
+        color: var(--leaf-dark);
+        background: white;
+      }
+
+      .button.secondary {
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.58);
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .hero-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.22);
+      }
+
+      .strip-item {
+        padding: 18px clamp(14px, 3vw, 28px);
+        background: rgba(17, 61, 48, 0.76);
+      }
+
+      .strip-item span {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+      }
+
+      .strip-item strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 16px;
+      }
+
+      main {
+        overflow: hidden;
+      }
+
+      .section {
+        padding: 72px clamp(18px, 5vw, 72px);
+      }
+
+      .inner {
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+
+      .section-head {
+        max-width: 760px;
+        margin-bottom: 30px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .card {
+        min-height: 180px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 22px;
+        background: var(--paper);
+        box-shadow: 0 10px 24px rgba(22, 33, 29, 0.06);
+      }
+
+      .card .eyebrow {
+        color: var(--water);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .card h3 {
+        margin: 9px 0 10px;
+        font-size: 19px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.52;
+      }
+
+      .workflow {
+        background: #ffffff;
+      }
+
+      .steps {
+        counter-reset: step;
+      }
+
+      .step {
+        position: relative;
+        padding-left: 54px;
+      }
+
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 22px;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: white;
+        background: var(--leaf);
+        font-weight: 800;
+      }
+
+      .demo-band {
+        background: var(--leaf-dark);
+        color: white;
+      }
+
+      .demo-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 28px;
+        align-items: center;
+      }
+
+      .demo-band .lead {
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .screen {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f8faf8;
+        box-shadow: 0 24px 54px rgba(0, 0, 0, 0.28);
+      }
+
+      .screen-top {
+        display: flex;
+        gap: 6px;
+        padding: 10px;
+        background: #dbe7df;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #9aa9a0;
+      }
+
+      .screen-body {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        min-height: 260px;
+      }
+
+      .screen-form,
+      .screen-report {
+        padding: 16px;
+      }
+
+      .screen-form {
+        background: #eef5ef;
+        border-right: 1px solid #d3dfd7;
+      }
+
+      .input-line,
+      .report-line {
+        height: 12px;
+        margin: 10px 0;
+        border-radius: 3px;
+        background: #cddbd2;
+      }
+
+      .input-line.short {
+        width: 62%;
+      }
+
+      .report-line {
+        background: #d9c38d;
+      }
+
+      .report-line.short {
+        width: 54%;
+      }
+
+      .report-line.green {
+        background: #8ab99d;
+      }
+
+      .open-source {
+        background: #fdfbf5;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 26px;
+        align-items: start;
+      }
+
+      .list {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .callout {
+        border-left: 5px solid var(--gold);
+        border-radius: 8px;
+        padding: 22px;
+        background: white;
+      }
+
+      .callout strong {
+        display: block;
+        margin-bottom: 9px;
+        color: var(--soil);
+      }
+
+      footer {
+        padding: 34px clamp(18px, 5vw, 72px);
+        color: rgba(255, 255, 255, 0.76);
+        background: #16211d;
+      }
+
+      .footer-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .footer-inner a {
+        color: white;
+      }
+
+      @media (max-width: 920px) {
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-strip,
+        .grid.four,
+        .grid.three,
+        .demo-layout,
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .screen-body {
+          grid-template-columns: 1fr;
+        }
+
+        .screen-form {
+          border-right: 0;
+          border-bottom: 1px solid #d3dfd7;
+        }
+
+        .nav-links {
+          display: none;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .hero-content {
+          padding-top: 34px;
+        }
+
+        .hero-actions {
+          display: grid;
+        }
+
+        .section {
+          padding-top: 54px;
+          padding-bottom: 54px;
+        }
+
+        .footer-inner {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <nav aria-label="Primary navigation">
+        <div class="brand">AI Farm Copilot</div>
+        <div class="nav-links">
+          <a href="#use-cases">Use cases</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#open-source">Open source</a>
+          <a href="https://github.com/ericccccxx/ai-farm-copilot">GitHub</a>
+        </div>
+      </nav>
+
+      <div class="hero-content">
+        <h1>Open-source AI for farms, gardens, vineyards, and turf.</h1>
+        <p class="hero-copy">
+          AI Farm Copilot turns photos, weather, soil, irrigation, and sensor notes into structured scouting reports for vineyards, orchards, golf courses, hobby farms, and home gardens.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="demo/">Try the demo</a>
+          <a class="button secondary" href="https://github.com/ericccccxx/ai-farm-copilot">View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="hero-strip" aria-label="Project highlights">
+        <div class="strip-item"><span>Core</span><strong>Free open-source skill</strong></div>
+        <div class="strip-item"><span>Input</span><strong>Photos + field notes</strong></div>
+        <div class="strip-item"><span>Output</span><strong>Inspection reports</strong></div>
+        <div class="strip-item"><span>Future</span><strong>Cameras, drones, sensors</strong></div>
+      </div>
+    </header>
+
+    <main>
+      <section id="use-cases" class="section">
+        <div class="inner">
+          <div class="section-head">
+            <h2>Built for the places expensive systems ignore.</h2>
+            <p class="lead">The first release focuses on practical, high-signal workflows that can start with a phone photo and a few field notes.</p>
+          </div>
+
+          <div class="grid four">
+            <article class="card">
+              <div class="eyebrow">Vineyards</div>
+              <h3>Block scouting</h3>
+              <p>Review vine stress, leaf color, irrigation patterns, canopy health, and follow-up checks before problems spread.</p>
+            </article>
+            <article class="card">
+              <div class="eyebrow">Orchards</div>
+              <h3>Tree health</h3>
+              <p>Turn observations about leaves, fruit, canopy, pests, and watering into a structured orchard task plan.</p>
+            </article>
+            <article class="card">
+              <div class="eyebrow">Golf turf</div>
+              <h3>Groundskeeping triage</h3>
+              <p>Capture patch stress, dry spots, compaction, traffic, irrigation coverage, and next checks in one report.</p>
+            </article>
+            <article class="card">
+              <div class="eyebrow">Gardens</div>
+              <h3>Simple care plans</h3>
+              <p>Give hobby farmers and home gardeners a calm assistant for plant observations, watering, and follow-up photos.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflow" class="section workflow">
+        <div class="inner">
+          <div class="section-head">
+            <h2>From field observation to next action.</h2>
+            <p class="lead">The project packages the inspection logic into an AI agent skill, so Codex, Claude, and other agents can follow the same practical workflow.</p>
+          </div>
+
+          <div class="grid three steps">
+            <article class="card step">
+              <h3>Add context</h3>
+              <p>Upload a photo, select the managed area, and add weather, irrigation, soil, recent treatment, and notes.</p>
+            </article>
+            <article class="card step">
+              <h3>Generate a report</h3>
+              <p>The agent separates observations from assumptions, lists likely causes, rates risk, and recommends next checks.</p>
+            </article>
+            <article class="card step">
+              <h3>Track follow-up</h3>
+              <p>Use exported reports, examples, and templates to build a lightweight history before adding sensors or dashboards.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section demo-band">
+        <div class="inner demo-layout">
+          <div>
+            <h2>Try the V0.1 demo.</h2>
+            <p class="lead">The demo runs fully in the browser. It supports image preview, scenario-specific defaults, risk level, next actions, and Markdown report download.</p>
+            <div class="hero-actions">
+              <a class="button primary" href="demo/">Open demo</a>
+              <a class="button secondary" href="https://github.com/ericccccxx/ai-farm-copilot/tree/main/skills/ai-farm-copilot">View the skill</a>
+            </div>
+          </div>
+          <div class="screen" aria-hidden="true">
+            <div class="screen-top">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+            <div class="screen-body">
+              <div class="screen-form">
+                <div class="input-line"></div>
+                <div class="input-line short"></div>
+                <div class="input-line"></div>
+                <div class="input-line short"></div>
+                <div class="input-line"></div>
+              </div>
+              <div class="screen-report">
+                <div class="report-line green"></div>
+                <div class="report-line"></div>
+                <div class="report-line short"></div>
+                <div class="report-line green"></div>
+                <div class="report-line"></div>
+                <div class="report-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="open-source" class="section open-source">
+        <div class="inner split">
+          <div>
+            <h2>Open core first, commercial layers later.</h2>
+            <p class="lead">The free project creates trust, adoption, examples, and pilot users. The commercial path can grow into hosted dashboards, hardware kits, deployment support, reporting packages, and equipment integrations.</p>
+          </div>
+          <div class="callout">
+            <strong>Safety boundary</strong>
+            <ul class="list">
+              <li>AI Farm Copilot is scouting support, not a certified diagnosis.</li>
+              <li>Chemical, irrigation, crop-loss, and compliance decisions should involve qualified local experts.</li>
+              <li>The skill is designed to organize observations and identify what to inspect next.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <div>AI Farm Copilot is free and open source.</div>
+        <div><a href="https://github.com/ericccccxx/ai-farm-copilot">GitHub repository</a></div>
+      </div>
+    </footer>
+  </body>
+</html>
+
