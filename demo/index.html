@@ -681,7 +681,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.25 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.26 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -1549,7 +1549,27 @@ rainfall_mm: 0</textarea>
         }, 2800);
       }
 
+      function localTimezone() {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || "Local";
+      }
+
+      function localInspectionTime(date = new Date()) {
+        return date.toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: localTimezone()
+        });
+      }
+
+      function formatRecordDate(record, options = { dateStyle: "short", timeStyle: "short" }) {
+        return new Date(record.createdAt).toLocaleString(undefined, {
+          ...options,
+          timeZone: record.timezone || localTimezone()
+        });
+      }
+
       function applyWeatherReading(reading, source) {
+        const timezone = localTimezone();
         const weatherSummary = [
           `${source}: ${reading.temperature_c}C`,
           `${reading.relative_humidity_percent}% humidity`,
@@ -1564,7 +1584,9 @@ rainfall_mm: 0</textarea>
           `humidity_percent: ${reading.relative_humidity_percent}`,
           `rainfall_mm: ${reading.precipitation_mm}`,
           `wind_speed_kmh: ${reading.wind_speed_kmh}`,
-          `weather_time: ${reading.time}`
+          `weather_time: ${reading.time}`,
+          `local_timezone: ${timezone}`,
+          `local_weather_import_time: ${localInspectionTime()}`
         ].join("\n");
         buildReport();
       }
@@ -1630,7 +1652,7 @@ rainfall_mm: 0</textarea>
             latitude: String(latitude),
             longitude: String(longitude),
             current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
-            timezone: "auto"
+            timezone: localTimezone()
           });
           const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
           if (!response.ok) throw new Error(`Weather request failed: ${response.status}`);
@@ -1763,10 +1785,10 @@ rainfall_mm: 0</textarea>
       function renderAreaDetail(area, records) {
         const latest = records[0];
         const highest = highestRisk(records);
-        const latestDate = latest ? new Date(latest.createdAt).toLocaleDateString() : "None";
+        const latestDate = latest ? formatRecordDate(latest, { dateStyle: "medium", timeStyle: "short" }) : "None";
         const latestAction = latest?.report?.match(/## Recommended Next Actions\n([\s\S]*?)\n\n## Do Not Do Yet/)?.[1]?.split("\n")[0]?.replace(/^\d+\.\s*/, "") || "Save an inspection to generate next actions.";
         const history = records.slice(0, 3).map((record) => {
-          const date = new Date(record.createdAt).toLocaleDateString();
+          const date = formatRecordDate(record, { dateStyle: "short" });
           return `<li><b class="${riskClass(record.risk)}">${escapeHtml(record.risk)}</b> - ${date} - ${escapeHtml(record.observation || "No observation saved.")}</li>`;
         }).join("");
 
@@ -1876,7 +1898,7 @@ rainfall_mm: 0</textarea>
           return `<circle cx="${point.x}" cy="${point.y}" r="6" fill="${color}"><title>${point.record.risk} risk</title></circle>`;
         }).join("");
         const labels = recent.slice(-4).map((record) => {
-          const date = new Date(record.createdAt).toLocaleDateString();
+          const date = formatRecordDate(record, { dateStyle: "short" });
           return `<div class="trend-label"><strong class="${riskClass(record.risk)}">${record.risk}</strong>${date}<br />${record.areaName || record.scenario}</div>`;
         }).join("");
 
@@ -1952,7 +1974,7 @@ rainfall_mm: 0</textarea>
           card.innerHTML = `
             <strong>${area.name}</strong>
             <span>${areaRecords.length} record(s) · highest risk: <b class="${riskClass(risk)}">${risk}</b></span>
-            <span>${latestRecord ? `Latest: ${new Date(latestRecord.createdAt).toLocaleDateString()}` : "No saved inspections yet"}</span>
+            <span>${latestRecord ? `Latest: ${formatRecordDate(latestRecord, { dateStyle: "short" })}` : "No saved inspections yet"}</span>
             <div class="risk-bar" aria-hidden="true">
               <div class="risk-segment low${riskRank(risk) >= 1 ? " active" : ""}"></div>
               <div class="risk-segment medium${riskRank(risk) >= 2 ? " active" : ""}"></div>
@@ -2037,6 +2059,10 @@ rainfall_mm: 0</textarea>
         const selectedArea = getSelectedArea();
         const risk = inferRisk();
         const follow = followUpForRisk(risk);
+        const now = new Date();
+        const timezone = localTimezone();
+        const localTime = localInspectionTime(now);
+        const timestamp = now.toISOString();
         const observations = sentenceList(notesEl.value || "No observation provided.");
         const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
@@ -2044,6 +2070,9 @@ rainfall_mm: 0</textarea>
         const carePlan = carePlanItems(risk);
         const context = [
           `Managed area record: ${selectedArea.name}`,
+          `Inspection time: ${localTime}`,
+          `Timezone: ${timezone}`,
+          `Timestamp: ${timestamp}`,
           `Scenario: ${defaults.label}`,
           `Managed area: ${cropEl.value || defaults.crop}`,
           `Area size: ${areaEl.value || "Not provided"}`,
@@ -2131,7 +2160,9 @@ rainfall_mm: 0</textarea>
 
         return {
           id: Date.now(),
-          createdAt: new Date().toISOString(),
+          createdAt: timestamp,
+          localInspectionTime: localTime,
+          timezone,
           areaId: selectedArea.id,
           areaName: selectedArea.name,
           scenario: defaults.label,
@@ -2361,7 +2392,7 @@ rainfall_mm: 0</textarea>
           const button = document.createElement("button");
           button.className = "saved-item";
           button.type = "button";
-          const date = new Date(record.createdAt).toLocaleString();
+          const date = formatRecordDate(record);
           button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.areaName || record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
           button.addEventListener("click", () => loadRecord(record));
           const deleteButton = document.createElement("button");

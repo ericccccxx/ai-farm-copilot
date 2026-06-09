@@ -196,10 +196,10 @@ Success metric:
 
 ## V0.26: Local Time and Timezone
 
-- Read browser timezone with `Intl.DateTimeFormat().resolvedOptions().timeZone`.
-- Add local inspection time, timezone, and timestamp to reports and saved records.
-- Use local time formatting in saved records and reports.
-- Pass timezone into weather requests where supported.
+- Read browser timezone with `Intl.DateTimeFormat().resolvedOptions().timeZone`. Done in V0.26.
+- Add local inspection time, timezone, and timestamp to reports and saved records. Done in V0.26.
+- Use local time formatting in saved records and reports. Done in V0.26.
+- Pass timezone into weather requests where supported. Done in V0.26.
 
 ## V0.27: Weather Forecast Risk
 
