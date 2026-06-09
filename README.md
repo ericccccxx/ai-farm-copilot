@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.9 demo supports:
+The V0.10 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
@@ -49,6 +49,8 @@ The V0.9 demo supports:
 - Photo checklist output in inspection reports.
 - CSV import for sensor readings or inspection logs.
 - Sample CSV import for demos.
+- JSON import for ESP32, Raspberry Pi, camera node, or sensor gateway readings.
+- Pasted JSON and sample JSON workflows.
 - Managed area records for vineyard blocks, orchard sections, golf zones, and garden beds.
 - Managed area update and delete controls.
 - Monitoring dashboard with area counts, record counts, high-risk count, and latest risk.

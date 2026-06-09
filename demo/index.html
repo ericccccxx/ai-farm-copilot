@@ -502,7 +502,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV readings, and sensor notes into saved area-level scouting reports. This V0.9 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, and sensor notes into saved area-level scouting reports. This V0.10 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -611,6 +611,15 @@ rainfall_mm: 0</textarea>
           <button id="sampleCsv" class="secondary" type="button">Use Sample CSV</button>
         </div>
 
+        <label for="jsonFile">Import sensor JSON</label>
+        <input id="jsonFile" type="file" accept=".json,application/json" />
+        <label for="jsonInput">Paste sensor JSON</label>
+        <textarea id="jsonInput" placeholder='{"timestamp":"2026-06-09T08:30:00Z","location":"vineyard-block-a","soil_moisture_percent":28,"air_temperature_c":31,"humidity_percent":46,"battery_percent":82}'></textarea>
+        <div class="actions">
+          <button id="importJson" class="secondary" type="button">Import JSON</button>
+          <button id="sampleJson" class="secondary" type="button">Use Sample JSON</button>
+        </div>
+
         <label for="notes">Observation</label>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
@@ -705,6 +714,8 @@ rainfall_mm: 0</textarea>
       const treatmentEl = document.getElementById("treatment");
       const sensorDataEl = document.getElementById("sensorData");
       const csvFileEl = document.getElementById("csvFile");
+      const jsonFileEl = document.getElementById("jsonFile");
+      const jsonInputEl = document.getElementById("jsonInput");
       const notesEl = document.getElementById("notes");
       const photoEl = document.getElementById("photo");
       const previewEl = document.getElementById("preview");
@@ -935,6 +946,80 @@ rainfall_mm: 0</textarea>
           "2026-06-09T14:00:00,vineyard-block-a,24,34,41,0,18,Lower leaves yellowing and curling on several vines"
         ].join("\n");
         summarizeCsvRecords(parseCsv(sample), "Sample CSV");
+      }
+
+      function flattenJson(value, prefix = "") {
+        if (value === null || value === undefined) return [];
+        if (Array.isArray(value)) {
+          const latest = value[value.length - 1];
+          return [
+            [`${prefix || "json"}_items`, value.length],
+            ...flattenJson(latest, prefix || "latest")
+          ];
+        }
+        if (typeof value === "object") {
+          return Object.entries(value).flatMap(([key, child]) => {
+            const nextPrefix = prefix ? `${prefix}.${key}` : key;
+            return flattenJson(child, nextPrefix);
+          });
+        }
+        return [[prefix, value]];
+      }
+
+      function summarizeJsonData(data, source) {
+        const entries = flattenJson(data).filter(([key]) => key).slice(0, 14);
+        if (!entries.length) {
+          showStatus("JSON did not contain usable sensor fields.");
+          return;
+        }
+
+        sensorDataEl.value = [
+          `json_source: ${source}`,
+          ...entries.map(([key, value]) => `${key}: ${value}`)
+        ].join("\n");
+
+        const location = data.location || data.device?.location || data.latest?.location;
+        if (location && !areaEl.value) areaEl.value = String(location);
+        showStatus("Sensor JSON imported.");
+        buildReport();
+      }
+
+      async function importJson() {
+        try {
+          let text = jsonInputEl.value.trim();
+          let source = "Pasted JSON";
+          const file = jsonFileEl.files && jsonFileEl.files[0];
+          if (file) {
+            text = await file.text();
+            source = file.name;
+          }
+          if (!text) {
+            showStatus("Choose a JSON file or paste JSON first.");
+            return;
+          }
+          summarizeJsonData(JSON.parse(text), source);
+        } catch (error) {
+          showStatus("JSON import failed. Check the format and try again.");
+        }
+      }
+
+      function useSampleJson() {
+        const sample = {
+          timestamp: new Date().toISOString(),
+          device_id: "esp32-field-node-01",
+          location: "vineyard-block-a",
+          soil_moisture_percent: 28,
+          air_temperature_c: 31,
+          humidity_percent: 46,
+          rainfall_mm: 0,
+          battery_percent: 82,
+          camera: {
+            last_capture: "2026-06-09_vineyard-block-a_overview_01.jpg",
+            signal_rssi: -61
+          }
+        };
+        jsonInputEl.value = JSON.stringify(sample, null, 2);
+        summarizeJsonData(sample, "Sample JSON");
       }
 
       function photoChecklistItems() {
@@ -1566,6 +1651,8 @@ rainfall_mm: 0</textarea>
       document.getElementById("sampleWeather").addEventListener("click", useSampleWeather);
       document.getElementById("importCsv").addEventListener("click", importCsv);
       document.getElementById("sampleCsv").addEventListener("click", useSampleCsv);
+      document.getElementById("importJson").addEventListener("click", importJson);
+      document.getElementById("sampleJson").addEventListener("click", useSampleJson);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);

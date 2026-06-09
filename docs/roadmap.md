@@ -98,6 +98,8 @@ Success metric:
 - Add Raspberry Pi camera workflow.
 - Add sensor calibration notes.
 - Add low-cost field gateway architecture.
+- Add JSON import for sensor gateway readings.
+- Add pasted JSON and sample JSON workflows.
 
 ## V1: Commercial-Ready Layer
 
