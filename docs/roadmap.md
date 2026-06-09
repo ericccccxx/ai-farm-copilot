@@ -157,6 +157,12 @@ Success metric:
 - Match records by crop, area, scenario, risk, notes, weather, sensor data, and report text.
 - Show a clear empty state when no records match the search.
 
+## V0.20: Saved Record Sorting
+
+- Add saved record sorting controls.
+- Sort saved records by newest, oldest, highest risk, and lowest risk.
+- Keep sorting compatible with saved record search.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

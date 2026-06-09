@@ -509,7 +509,10 @@
         font-size: 13px;
       }
 
-      .saved-search {
+      .saved-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 150px;
+        gap: 10px;
         margin-top: 8px;
       }
 
@@ -549,6 +552,7 @@
         .grid-two,
         .actions,
         .dashboard-filter,
+        .saved-controls,
         .meta,
         .dashboard,
         .trend-labels,
@@ -619,7 +623,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.19 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.20 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -766,7 +770,15 @@ rainfall_mm: 0</textarea>
         <div id="statusLine" class="status-line"></div>
 
         <h3>Saved Records</h3>
-        <input id="savedSearch" class="saved-search" placeholder="Search saved records" />
+        <div class="saved-controls">
+          <input id="savedSearch" placeholder="Search saved records" />
+          <select id="savedSort" aria-label="Sort saved records">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="riskHigh">Risk high</option>
+            <option value="riskLow">Risk low</option>
+          </select>
+        </div>
         <div id="savedList" class="saved-list"></div>
       </section>
 
@@ -902,6 +914,7 @@ rainfall_mm: 0</textarea>
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedSearchEl = document.getElementById("savedSearch");
+      const savedSortEl = document.getElementById("savedSort");
       const savedListEl = document.getElementById("savedList");
       const statusLineEl = document.getElementById("statusLine");
       const storageKey = "aiFarmCopilotRecords";
@@ -2100,10 +2113,20 @@ rainfall_mm: 0</textarea>
         return haystack.includes(query);
       }
 
+      function sortSavedRecords(records) {
+        const mode = savedSortEl.value || "newest";
+        return [...records].sort((a, b) => {
+          if (mode === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
+          if (mode === "riskHigh") return riskRank(b.risk) - riskRank(a.risk) || new Date(b.createdAt) - new Date(a.createdAt);
+          if (mode === "riskLow") return riskRank(a.risk) - riskRank(b.risk) || new Date(b.createdAt) - new Date(a.createdAt);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+      }
+
       function renderSavedRecords() {
         const query = savedSearchEl.value.trim().toLowerCase();
         const records = getRecords();
-        const visibleRecords = records.filter((record) => recordMatchesSearch(record, query));
+        const visibleRecords = sortSavedRecords(records.filter((record) => recordMatchesSearch(record, query)));
         savedListEl.innerHTML = "";
         if (!records.length) {
           const empty = document.createElement("div");
@@ -2182,6 +2205,7 @@ rainfall_mm: 0</textarea>
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
       dashboardRiskFilterEl.addEventListener("change", renderDashboard);
       savedSearchEl.addEventListener("input", renderSavedRecords);
+      savedSortEl.addEventListener("change", renderSavedRecords);
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);
