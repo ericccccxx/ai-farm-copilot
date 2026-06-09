@@ -127,6 +127,12 @@ Success metric:
 - Add prompt download for Codex, Claude, and other agent workflows.
 - Include safety boundaries, missing evidence, and requested output structure in the prompt.
 
+## V0.15: Scenario Prompt Templates
+
+- Add vineyard, orchard, golf turf, and home garden prompt presets.
+- Tune each prompt with scenario-specific focus areas and missing evidence requests.
+- Show the active advisor template in the report interface.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

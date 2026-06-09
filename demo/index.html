@@ -565,7 +565,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.14 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.15 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -774,7 +774,7 @@ rainfall_mm: 0</textarea>
             <ol id="outCarePlan"></ol>
 
             <div class="agent-prompt">
-              <h3>Agent Prompt</h3>
+              <h3 id="agentPromptTitle">Agent Prompt</h3>
               <textarea id="outAdvisorPrompt" readonly></textarea>
               <div class="actions">
                 <button id="copyPrompt" class="secondary" type="button">Copy Prompt</button>
@@ -941,6 +941,73 @@ rainfall_mm: 0</textarea>
         }
       };
 
+      const agentPromptPresets = {
+        vineyard: {
+          label: "Vineyard Advisor",
+          role: "a cautious vineyard scouting advisor focused on vine stress, irrigation uniformity, canopy symptoms, and block-level follow-up",
+          focus: [
+            "Compare affected vines against healthy vines in the same block.",
+            "Check irrigation timing, emitter performance, soil moisture at root depth, and heat or wind exposure.",
+            "Separate water stress, nutrient stress, disease pressure, and equipment/coverage issues as hypotheses.",
+            "Recommend repeat photos from the same vines or rows before escalating decisions."
+          ],
+          evidence: [
+            "root-zone soil moisture from affected and healthy rows",
+            "close-up leaf photos from top and underside",
+            "irrigation pressure or emitter observations",
+            "recent fertilizer, spray, and heat history"
+          ]
+        },
+        orchard: {
+          label: "Orchard Advisor",
+          role: "a cautious orchard scouting advisor focused on tree vigor, canopy patterns, fruit stress, irrigation coverage, and pest or disease signs",
+          focus: [
+            "Compare canopy sides, affected trees, and nearby healthy trees.",
+            "Check whether symptoms follow sun exposure, irrigation coverage, root-zone moisture, or tree age.",
+            "Look for pest or disease signs on leaf undersides, new growth, fruit, bark, and branch junctions.",
+            "Recommend follow-up by tree row or block, not only by individual leaf symptoms."
+          ],
+          evidence: [
+            "photos of full tree canopy and close-up leaves or fruit",
+            "soil moisture near trunk and canopy edge",
+            "sprinkler or micro-irrigation coverage notes",
+            "recent weather, pruning, fertilizer, and treatment history"
+          ]
+        },
+        golf: {
+          label: "Golf Turf Advisor",
+          role: "a cautious golf turf scouting advisor focused on turf discoloration, traffic stress, compaction, irrigation coverage, drainage, and maintenance timing",
+          focus: [
+            "Compare affected turf with healthy turf in the same irrigation zone.",
+            "Check whether symptoms follow high spots, cart traffic, sprinkler overlap, soil compaction, or drainage patterns.",
+            "Distinguish localized dry spots, mowing stress, compaction, disease pattern, and irrigation problems as hypotheses.",
+            "Recommend low-risk checks before chemical or aggressive maintenance decisions."
+          ],
+          evidence: [
+            "soil probe readings from affected and healthy spots",
+            "sprinkler nozzle and coverage observations",
+            "traffic, mowing height, and maintenance notes",
+            "close-up turf crown, root, and patch edge photos"
+          ]
+        },
+        garden: {
+          label: "Home Garden Advisor",
+          role: "a cautious home garden advisor focused on low-risk plant care, watering habits, light, drainage, pests, and simple follow-up checks",
+          focus: [
+            "Prioritize low-risk care steps before recommending products or major changes.",
+            "Check watering frequency, drainage, sunlight, airflow, container or bed conditions, and recent weather.",
+            "Separate normal leaf aging, overwatering, nutrient stress, pest pressure, and disease risk as hypotheses.",
+            "Recommend simple recheck timing and new photos from the same plant."
+          ],
+          evidence: [
+            "photo of the whole plant and close-up affected leaves",
+            "watering schedule and soil feel before watering",
+            "light exposure and airflow notes",
+            "leaf underside, stem, and soil surface observations"
+          ]
+        }
+      };
+
       let latestReport = "";
       let latestAdvisorPrompt = "";
 
@@ -961,6 +1028,33 @@ rainfall_mm: 0</textarea>
           li.textContent = item;
           node.appendChild(li);
         });
+      }
+
+      function buildAdvisorPrompt(scenarioKey, report) {
+        const preset = agentPromptPresets[scenarioKey] || agentPromptPresets.vineyard;
+        document.getElementById("agentPromptTitle").textContent = `Agent Prompt: ${preset.label}`;
+        return [
+          `Use the AI Farm Copilot skill as ${preset.role}.`,
+          "",
+          "Task:",
+          "Review the inspection context and draft a practical next-step plan. Separate observed facts from assumptions. Flag missing evidence. Do not present chemical, irrigation, disease, pest, watering, or major maintenance decisions as confirmed diagnoses without local expert review.",
+          "",
+          "Scenario-specific focus:",
+          ...preset.focus.map((item) => `- ${item}`),
+          "",
+          "Missing evidence to request if unavailable:",
+          ...preset.evidence.map((item) => `- ${item}`),
+          "",
+          "Current inspection report:",
+          report,
+          "",
+          "Requested output:",
+          "1. Brief summary",
+          "2. Most likely causes, with confidence language",
+          "3. Immediate checks to perform",
+          "4. 7-day care plan",
+          "5. When to ask a qualified local professional"
+        ].join("\n");
       }
 
       function parseSensorNotes(text) {
@@ -1652,22 +1746,7 @@ rainfall_mm: 0</textarea>
           "Use this report as scouting support. Review high-risk decisions with a qualified local professional."
         ].join("\n");
 
-        latestAdvisorPrompt = [
-          "Use the AI Farm Copilot skill as a cautious farm, garden, vineyard, orchard, or turf scouting assistant.",
-          "",
-          "Task:",
-          "Review the inspection context and draft a practical next-step plan. Separate observed facts from assumptions. Flag missing evidence. Do not present chemical, irrigation, disease, or pest decisions as confirmed diagnoses without local expert review.",
-          "",
-          "Current inspection report:",
-          latestReport,
-          "",
-          "Requested output:",
-          "1. Brief summary",
-          "2. Most likely causes, with confidence language",
-          "3. Immediate checks to perform",
-          "4. 7-day care plan",
-          "5. When to ask a qualified local professional"
-        ].join("\n");
+        latestAdvisorPrompt = buildAdvisorPrompt(scenarioEl.value, latestReport);
 
         document.getElementById("outAdvisorPrompt").value = latestAdvisorPrompt;
 
