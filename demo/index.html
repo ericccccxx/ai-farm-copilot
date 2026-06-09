@@ -509,6 +509,39 @@
         margin-top: 10px;
       }
 
+      .area-detail {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 22px;
+        background: #fbfcfa;
+      }
+
+      .area-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .area-detail-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+      }
+
+      .area-detail-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .area-detail-item strong {
+        display: block;
+        margin-top: 5px;
+      }
+
       .status-line {
         min-height: 18px;
         margin-top: 10px;
@@ -560,6 +593,7 @@
         .meta,
         .dashboard,
         .trend-labels,
+        .area-detail-grid,
         .area-health,
         .causes {
           grid-template-columns: 1fr 1fr;
@@ -578,6 +612,7 @@
         .meta,
         .dashboard,
         .trend-labels,
+        .area-detail-grid,
         .area-health,
         .causes {
           grid-template-columns: 1fr;
@@ -624,6 +659,7 @@
         .meta,
         .dashboard,
         .trend-panel,
+        .area-detail,
         .area-health,
         .causes {
           break-inside: avoid;
@@ -645,7 +681,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.22 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.23 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -845,6 +881,9 @@ rainfall_mm: 0</textarea>
         <h3>Area Health</h3>
         <div id="areaHealth" class="area-health"></div>
 
+        <h3>Area Detail</h3>
+        <div id="areaDetail" class="area-detail"></div>
+
         <h2>Inspection Report</h2>
 
         <div class="meta">
@@ -936,6 +975,7 @@ rainfall_mm: 0</textarea>
       const sideNoteEl = document.getElementById("sideNote");
       const areaListEl = document.getElementById("areaList");
       const areaHealthEl = document.getElementById("areaHealth");
+      const areaDetailEl = document.getElementById("areaDetail");
       const riskTrendEl = document.getElementById("riskTrend");
       const dashboardAreaFilterEl = document.getElementById("dashboardAreaFilter");
       const dashboardRiskFilterEl = document.getElementById("dashboardRiskFilter");
@@ -1656,6 +1696,38 @@ rainfall_mm: 0</textarea>
         document.getElementById("outAreaSize").textContent = area.size;
         document.getElementById("outAreaRecords").textContent = String(records.length);
         document.getElementById("outAreaRisk").textContent = records[0] ? records[0].risk : "None";
+        renderAreaDetail(area, records);
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;",
+          "'": "&#39;"
+        }[char]));
+      }
+
+      function renderAreaDetail(area, records) {
+        const latest = records[0];
+        const highest = highestRisk(records);
+        const latestDate = latest ? new Date(latest.createdAt).toLocaleDateString() : "None";
+        const latestAction = latest?.report?.match(/## Recommended Next Actions\n([\s\S]*?)\n\n## Do Not Do Yet/)?.[1]?.split("\n")[0]?.replace(/^\d+\.\s*/, "") || "Save an inspection to generate next actions.";
+        const history = records.slice(0, 3).map((record) => {
+          const date = new Date(record.createdAt).toLocaleDateString();
+          return `<li><b class="${riskClass(record.risk)}">${escapeHtml(record.risk)}</b> - ${date} - ${escapeHtml(record.observation || "No observation saved.")}</li>`;
+        }).join("");
+
+        areaDetailEl.innerHTML = `
+          <div class="area-detail-grid">
+            <div class="area-detail-item"><span>Selected area</span><strong>${escapeHtml(area.name)}</strong></div>
+            <div class="area-detail-item"><span>Latest inspection</span><strong>${latestDate}</strong></div>
+            <div class="area-detail-item"><span>Highest saved risk</span><strong class="${riskClass(highest)}">${escapeHtml(highest)}</strong></div>
+          </div>
+          <p><strong>Next action:</strong> ${escapeHtml(latestAction)}</p>
+          <ul>${history || "<li>No saved inspections for this area yet.</li>"}</ul>
+        `;
       }
 
       function riskRank(risk) {

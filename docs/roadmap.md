@@ -175,6 +175,12 @@ Success metric:
 - Show recent risk movement for each managed area.
 - Keep the trend display lightweight and browser-only.
 
+## V0.23: Area Detail View
+
+- Add a selected-area detail panel.
+- Show latest inspection date, highest saved risk, next action, and recent history.
+- Refresh area detail when records or selected area change.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.
