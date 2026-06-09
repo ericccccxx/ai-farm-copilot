@@ -18,10 +18,10 @@ Use this as the first GitHub issue list after launch.
 
 ## Demo
 
-- Add real image preview.
-- Add report export.
+- Add multi-photo preview.
+- Add PDF report export.
 - Add local storage for saved reports.
-- Add scenario-specific report changes.
+- Add richer scenario-specific report changes.
 - Add mobile layout polish.
 
 ## Data
@@ -44,4 +44,3 @@ Use this as the first GitHub issue list after launch.
 - Add first pilot request form.
 - Add GitHub issue templates.
 - Add contributor examples.
-

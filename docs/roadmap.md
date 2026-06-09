@@ -23,14 +23,16 @@ Success metric:
 
 ## V0.1: Better Reports
 
-- Improve photo intake checklist.
+- Add local image upload and preview.
+- Add scenario-specific defaults.
 - Add report severity scoring.
 - Add follow-up task generation.
+- Add exportable Markdown inspection report.
+
+## V0.2: Photo Intake and Weather
+
+- Improve photo intake checklist.
 - Add multi-photo comparison workflow.
-- Add exportable inspection report format.
-
-## V0.2: Weather and Field Data
-
 - Add weather API adapter.
 - Add soil moisture CSV parser.
 - Add irrigation schedule template.
@@ -57,4 +59,3 @@ Success metric:
 - Saved fields, blocks, and reports.
 - Hardware kit partnerships.
 - Vineyard, orchard, and golf turf pilot programs.
-
