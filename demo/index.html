@@ -389,7 +389,7 @@
 
       .dashboard-filter {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
         align-items: end;
         margin-bottom: 14px;
@@ -551,7 +551,7 @@
 
       .saved-controls {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 150px;
+        grid-template-columns: minmax(0, 1fr) 140px 140px;
         gap: 10px;
         margin-top: 8px;
       }
@@ -681,7 +681,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.23 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.24 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -836,6 +836,11 @@ rainfall_mm: 0</textarea>
             <option value="riskHigh">Risk high</option>
             <option value="riskLow">Risk low</option>
           </select>
+          <select id="savedDateFilter" aria-label="Filter saved records by date">
+            <option value="all">All dates</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
         </div>
         <div class="quick-filters" aria-label="Saved record quick filters">
           <button class="quick-filter" type="button" data-filter="all">All</button>
@@ -864,6 +869,14 @@ rainfall_mm: 0</textarea>
               <option value="High">High risk</option>
               <option value="Medium">Medium risk</option>
               <option value="Low">Low risk</option>
+            </select>
+          </div>
+          <div>
+            <label for="dashboardDateFilter">Date Range</label>
+            <select id="dashboardDateFilter">
+              <option value="all">All dates</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
             </select>
           </div>
         </div>
@@ -979,10 +992,12 @@ rainfall_mm: 0</textarea>
       const riskTrendEl = document.getElementById("riskTrend");
       const dashboardAreaFilterEl = document.getElementById("dashboardAreaFilter");
       const dashboardRiskFilterEl = document.getElementById("dashboardRiskFilter");
+      const dashboardDateFilterEl = document.getElementById("dashboardDateFilter");
       const newAreaNameEl = document.getElementById("newAreaName");
       const newAreaSizeEl = document.getElementById("newAreaSize");
       const savedSearchEl = document.getElementById("savedSearch");
       const savedSortEl = document.getElementById("savedSort");
+      const savedDateFilterEl = document.getElementById("savedDateFilter");
       const savedListEl = document.getElementById("savedList");
       const statusLineEl = document.getElementById("statusLine");
       const storageKey = "aiFarmCopilotRecords";
@@ -990,7 +1005,6 @@ rainfall_mm: 0</textarea>
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
       let loadedPhotos = [];
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
-      let savedQuickFilter = "all";
       const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
       const roleMatchers = [
         [/affected|stress|disease|problem|issue/i, "Affected area"],
@@ -1786,6 +1800,19 @@ rainfall_mm: 0</textarea>
         return records.filter((record) => record.risk === risk);
       }
 
+      function recordInDateRange(record, range) {
+        if (range === "all") return true;
+        const days = Number(range);
+        if (!Number.isFinite(days)) return true;
+        const createdAt = new Date(record.createdAt).getTime();
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+        return Number.isFinite(createdAt) && createdAt >= cutoff;
+      }
+
+      function filterRecordsByDashboardDate(records) {
+        return records.filter((record) => recordInDateRange(record, dashboardDateFilterEl.value || "all"));
+      }
+
       function renderRiskTrend(records) {
         const recent = records.slice(0, 8).reverse();
         if (!recent.length) {
@@ -1867,7 +1894,7 @@ rainfall_mm: 0</textarea>
         const allRecords = getRecords();
         renderDashboardFilter(areas);
         const scope = dashboardScope(areas, allRecords);
-        const records = filterRecordsByRisk(scope.records);
+        const records = filterRecordsByDashboardDate(filterRecordsByRisk(scope.records));
         const latest = records[0];
         const highRiskCount = records.filter((record) => record.risk === "High").length;
 
@@ -1879,7 +1906,7 @@ rainfall_mm: 0</textarea>
 
         areaHealthEl.innerHTML = "";
         scope.areas.slice(0, 6).forEach((area) => {
-          const areaRecords = filterRecordsByRisk(allRecords.filter((record) => record.areaId === area.id));
+          const areaRecords = filterRecordsByDashboardDate(filterRecordsByRisk(allRecords.filter((record) => record.areaId === area.id)));
           const risk = highestRisk(areaRecords);
           const latestRecord = areaRecords[0];
           const card = document.createElement("button");
@@ -2246,21 +2273,15 @@ rainfall_mm: 0</textarea>
         return haystack.includes(query);
       }
 
-      function recordMatchesQuickFilter(record) {
-        if (savedQuickFilter === "recent") {
-          const createdAt = new Date(record.createdAt).getTime();
-          const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          return Number.isFinite(createdAt) && createdAt >= sevenDaysAgo;
-        }
-        return true;
-      }
-
       function applySavedQuickFilter(filter) {
-        savedQuickFilter = filter;
         if (filter === "all") savedSearchEl.value = "";
         if (filter === "high") savedSearchEl.value = "High";
         if (filter === "current") savedSearchEl.value = getSelectedArea().name;
-        if (filter === "recent") savedSearchEl.value = "";
+        if (filter === "recent") {
+          savedSearchEl.value = "";
+          savedDateFilterEl.value = "7";
+        }
+        if (filter !== "recent") savedDateFilterEl.value = "all";
         renderSavedRecords();
       }
 
@@ -2276,8 +2297,9 @@ rainfall_mm: 0</textarea>
 
       function renderSavedRecords() {
         const query = savedSearchEl.value.trim().toLowerCase();
+        const dateRange = savedDateFilterEl.value || "all";
         const records = getRecords();
-        const visibleRecords = sortSavedRecords(records.filter((record) => recordMatchesSearch(record, query) && recordMatchesQuickFilter(record)));
+        const visibleRecords = sortSavedRecords(records.filter((record) => recordMatchesSearch(record, query) && recordInDateRange(record, dateRange)));
         savedListEl.innerHTML = "";
         if (!records.length) {
           const empty = document.createElement("div");
@@ -2290,7 +2312,7 @@ rainfall_mm: 0</textarea>
         if (!visibleRecords.length) {
           const empty = document.createElement("div");
           empty.className = "status-line";
-          empty.textContent = "No saved records match this search.";
+          empty.textContent = "No saved records match the current filters.";
           savedListEl.appendChild(empty);
           return;
         }
@@ -2355,11 +2377,12 @@ rainfall_mm: 0</textarea>
       document.getElementById("clearData").addEventListener("click", clearLocalData);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
       dashboardRiskFilterEl.addEventListener("change", renderDashboard);
+      dashboardDateFilterEl.addEventListener("change", renderDashboard);
       savedSearchEl.addEventListener("input", () => {
-        savedQuickFilter = "all";
         renderSavedRecords();
       });
       savedSortEl.addEventListener("change", renderSavedRecords);
+      savedDateFilterEl.addEventListener("change", renderSavedRecords);
       document.querySelectorAll(".quick-filter").forEach((button) => {
         button.addEventListener("click", () => applySavedQuickFilter(button.dataset.filter));
       });

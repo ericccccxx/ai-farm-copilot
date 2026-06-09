@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.23 demo supports:
+The V0.24 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
@@ -62,6 +62,7 @@ The V0.23 demo supports:
 - Risk trend chart from saved inspection history.
 - Dashboard scope filtering for all areas, the current selected area, or one managed area.
 - Dashboard risk filtering for high, medium, and low-risk saved records.
+- Dashboard date range filtering for all dates, last 7 days, and last 30 days.
 - Area health cards with risk bars and recent inspection status.
 - Per-area mini trend lines in area health cards.
 - Area detail view with latest inspection, highest risk, next action, and recent history.
@@ -77,6 +78,7 @@ The V0.23 demo supports:
 - Saved record search across crop, area, risk, notes, weather, and sensor text.
 - Saved record sorting by newest, oldest, highest risk, and lowest risk.
 - Saved record quick filters for all records, high risk, current area, and recent 7 days.
+- Saved record date range filtering for all dates, last 7 days, and last 30 days.
 - Saved record deletion.
 - JSON history export.
 - Local demo data reset.
@@ -143,6 +145,7 @@ ai-farm-copilot/
 - V0.21: Saved record quick filters.
 - V0.22: Per-area risk trend lines.
 - V0.23: Area detail view.
+- V0.24: Dashboard and saved record date range filters.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

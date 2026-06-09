@@ -181,10 +181,102 @@ Success metric:
 - Show latest inspection date, highest saved risk, next action, and recent history.
 - Refresh area detail when records or selected area change.
 
-## V1: Commercial-Ready Layer
+## V0.24: Date Range Filters
 
-- Hosted dashboard.
-- Team accounts.
-- Saved fields, blocks, and reports.
-- Hardware kit partnerships.
-- Vineyard, orchard, and golf turf pilot programs.
+- Add dashboard date range filtering for all dates, last 7 days, and last 30 days.
+- Add saved record date range filtering for all dates, last 7 days, and last 30 days.
+- Keep date filters compatible with search, sorting, quick filters, area filters, and risk filters.
+
+## V0.25: Automatic Location
+
+- Add a Use My Location control.
+- Use browser geolocation to fill latitude and longitude after user permission.
+- Keep manual latitude and longitude input as the fallback.
+- Show clear success, denied, timeout, and unsupported states.
+
+## V0.26: Local Time and Timezone
+
+- Read browser timezone with `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+- Add local inspection time, timezone, and timestamp to reports and saved records.
+- Use local time formatting in saved records and reports.
+- Pass timezone into weather requests where supported.
+
+## V0.27: Weather Forecast Risk
+
+- Extend Open-Meteo import from current weather to 7-day forecast.
+- Add weather risk notes for heat, wind, high humidity, no rain, and post-rain disease pressure.
+- Add forecast risk warnings to the report and dashboard.
+
+## V0.28: Map Location View
+
+- Add a map panel centered on the current GPS coordinates.
+- Show managed areas and saved inspection points on the map.
+- Store center coordinates for managed areas.
+
+## V0.29: Managed Area Boundaries
+
+- Add simple boundary drawing for vineyard blocks, orchard zones, golf zones, and garden beds.
+- Store polygon boundaries locally.
+- Attach saved inspections to area boundaries for later satellite clipping.
+
+## V0.30: Satellite Basemap MVP
+
+- Add a satellite-style map layer.
+- Show current location, managed areas, and saved inspection points over the basemap.
+- Prioritize visual clarity before advanced agronomic analysis.
+
+## V0.31: Satellite NDVI Data
+
+- Connect a satellite data source for NDVI when an area boundary is available.
+- Add cloud-aware recent image selection.
+- Add satellite vegetation notes to the report.
+
+## V0.32: Satellite Time Comparison
+
+- Compare current and previous NDVI readings.
+- Classify satellite trend as improving, stable, declining, or unavailable.
+- Add NDVI trend to dashboard and area detail.
+
+## V0.33: Photo AI Evidence
+
+- Add optional vision-model analysis for uploaded photos.
+- Extract visible symptoms, affected plant parts, image quality, and missing photo requests.
+- Treat photo AI output as evidence, not a final diagnosis.
+
+## V0.34: Evidence Fusion Score
+
+- Combine photo, weather, satellite, history, and sensor signals into a risk score.
+- Show which evidence sources influenced the risk decision.
+- Keep recommendations cautious and evidence-based.
+
+## V0.35: One-Click AI Report
+
+- Let users generate a full inspection report from photo, location, and scenario with minimal manual input.
+- Make manual notes optional context instead of required context.
+- Produce an AI-ready evidence packet for Codex, Claude, or GPT.
+
+## V0.36: Pilot Mode
+
+- Add pilot customer workflow for vineyards, orchards, and golf courses.
+- Export weekly reports in Markdown, JSON, and browser PDF.
+- Add pilot intake form and reporting checklist.
+
+## V1.0: Free Usable Release
+
+- GitHub Pages demo, agent skill, and documentation are complete.
+- Photo, location, weather, map, history, and report flow can run end to end.
+- Satellite and vision AI remain optional integrations.
+- README clearly explains open-source use, agent use, hardware use, and drone/robot compatibility.
+
+## V1.5: Hosted Dashboard
+
+- Add accounts, cloud-saved areas, and cloud-saved inspections.
+- Add team access.
+- Run scheduled weather and satellite refreshes.
+- Add email or SMS alerts for high-risk areas.
+
+## V2.0: Hardware Decision Layer
+
+- Support camera, drone, Raspberry Pi, ESP32, and robot data uploads.
+- Accept photos, sensor JSON, location, weather, and satellite data.
+- Output risk, tasks, routes, recheck timing, and reports for people or equipment.

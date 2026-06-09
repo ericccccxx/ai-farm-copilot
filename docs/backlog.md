@@ -18,7 +18,7 @@ Use this as the first GitHub issue list after launch.
 
 ## Demo
 
-- Add saved record date range filter.
+- Add custom date range picker.
 - Add expanded per-area history drawer.
 - Add dashboard filters by scenario and date range.
 - Add saved weather snapshots by area.
