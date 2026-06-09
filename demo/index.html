@@ -151,6 +151,16 @@
         border-radius: 6px;
       }
 
+      .photo-tile {
+        min-width: 0;
+      }
+
+      .photo-tile select {
+        margin-top: 6px;
+        padding: 7px 8px;
+        font-size: 12px;
+      }
+
       .photo-empty {
         grid-column: 1 / -1;
         display: grid;
@@ -485,7 +495,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.6 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.7 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -640,6 +650,9 @@ rainfall_mm: 0</textarea>
             <h3>Observations</h3>
             <ul id="outObservations"></ul>
 
+            <h3>Photo Checklist</h3>
+            <ul id="outPhotoChecklist"></ul>
+
             <h3>Sensor Notes</h3>
             <ul id="outSensors"></ul>
 
@@ -693,6 +706,7 @@ rainfall_mm: 0</textarea>
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
       let loadedPhotos = [];
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
+      const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
 
       const scenarioDefaults = {
         vineyard: {
@@ -826,6 +840,37 @@ rainfall_mm: 0</textarea>
           .slice(0, 8);
 
         return rows.length ? rows : ["No sensor readings provided."];
+      }
+
+      function photoChecklistItems() {
+        if (!loadedPhotos.length) return ["No photos loaded. Add overview, affected, healthy comparison, and close-up images when possible."];
+        return loadedPhotos.map((photo, index) => `Photo ${index + 1}: ${photo.role} - ${photo.name}`);
+      }
+
+      function renderPhotoPreviews() {
+        if (!loadedPhotos.length) {
+          previewEl.innerHTML = '<div class="photo-empty"><strong>Photo preview</strong><br /><small>Upload plant, vine, tree, turf, or drone images.</small></div>';
+          sideImageEl.innerHTML = "";
+          sideNoteEl.textContent = "No photo loaded yet. The live skill can use uploaded images plus field context to guide the inspection workflow.";
+          return;
+        }
+
+        previewEl.innerHTML = "";
+        loadedPhotos.forEach((photo, index) => {
+          const tile = document.createElement("div");
+          tile.className = "photo-tile";
+          const options = photoRoles.map((role) => `<option value="${role}"${role === photo.role ? " selected" : ""}>${role}</option>`).join("");
+          tile.innerHTML = `<img alt="Uploaded field preview" src="${photo.url}" /><select aria-label="Photo ${index + 1} role">${options}</select>`;
+          tile.querySelector("select").addEventListener("change", (event) => {
+            loadedPhotos[index].role = event.target.value;
+            renderPhotoPreviews();
+            buildReport();
+          });
+          previewEl.appendChild(tile);
+        });
+
+        sideImageEl.innerHTML = loadedPhotos.slice(0, 3).map((photo) => `<img alt="${photo.role}" src="${photo.url}" />`).join("");
+        sideNoteEl.textContent = `${loadedPhotos.length} image(s) loaded locally with scouting roles. No image data leaves the browser.`;
       }
 
       function getRecords() {
@@ -1123,6 +1168,7 @@ rainfall_mm: 0</textarea>
         const risk = inferRisk();
         const follow = followUpForRisk(risk);
         const observations = sentenceList(notesEl.value || "No observation provided.");
+        const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
         const context = [
           `Managed area record: ${selectedArea.name}`,
@@ -1133,7 +1179,8 @@ rainfall_mm: 0</textarea>
           `Irrigation / watering: ${irrigationEl.value || "Not provided"}`,
           `Soil moisture: ${soilEl.value || "Not provided"}`,
           `Recent treatment: ${treatmentEl.value || "Not provided"}`,
-          `Photos loaded: ${loadedPhotos.length}`
+          `Photos loaded: ${loadedPhotos.length}`,
+          `Photo roles: ${loadedPhotos.length ? loadedPhotos.map((photo) => photo.role).join(", ") : "Not provided"}`
         ];
         const dont = [
           "Do not make chemical or major irrigation decisions from this demo report alone.",
@@ -1150,6 +1197,7 @@ rainfall_mm: 0</textarea>
 
         setList("outContext", context);
         setList("outObservations", observations);
+        setList("outPhotoChecklist", photoChecklist);
         setList("outSensors", sensors);
         setList("outActions", defaults.actions);
         setList("outDont", dont);
@@ -1171,6 +1219,9 @@ rainfall_mm: 0</textarea>
           "",
           "## Observations",
           ...observations.map((item) => `- ${item}`),
+          "",
+          "## Photo Checklist",
+          ...photoChecklist.map((item) => `- ${item}`),
           "",
           "## Sensor Notes",
           ...sensors.map((item) => `- ${item}`),
@@ -1211,6 +1262,7 @@ rainfall_mm: 0</textarea>
           sensorData: sensorDataEl.value || "",
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
+          photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role })),
           report: latestReport
         };
       }
@@ -1274,9 +1326,7 @@ rainfall_mm: 0</textarea>
         localStorage.removeItem(selectedAreaKey);
         selectedAreaId = "vineyard-block-a";
         loadedPhotos = [];
-        previewEl.innerHTML = '<div class="photo-empty"><strong>Photo preview</strong><br /><small>Upload plant, vine, tree, turf, or drone images.</small></div>';
-        sideImageEl.innerHTML = "";
-        sideNoteEl.textContent = "No photo loaded yet. The live skill can use uploaded images plus field context to guide the inspection workflow.";
+        renderPhotoPreviews();
         photoEl.value = "";
         selectManagedArea(selectedAreaId);
         renderSavedRecords();
@@ -1356,10 +1406,8 @@ rainfall_mm: 0</textarea>
         const files = Array.from(photoEl.files || []).slice(0, 6);
         if (!files.length) return;
         loadedPhotos.forEach((photo) => URL.revokeObjectURL(photo.url));
-        loadedPhotos = files.map((file) => ({ name: file.name, url: URL.createObjectURL(file) }));
-        previewEl.innerHTML = loadedPhotos.map((photo) => `<img alt="Uploaded field preview" src="${photo.url}" />`).join("");
-        sideImageEl.innerHTML = loadedPhotos.slice(0, 3).map((photo) => `<img alt="Uploaded field preview" src="${photo.url}" />`).join("");
-        sideNoteEl.textContent = `${loadedPhotos.length} image(s) loaded locally. No image data leaves the browser.`;
+        loadedPhotos = files.map((file, index) => ({ name: file.name, url: URL.createObjectURL(file), role: photoRoles[index] || "Close-up" }));
+        renderPhotoPreviews();
         buildReport();
       });
 

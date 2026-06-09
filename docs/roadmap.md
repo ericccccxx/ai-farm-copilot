@@ -68,8 +68,10 @@ Success metric:
 
 ## V0.7: Photo Intake
 
-- Improve photo intake checklist.
-- Add multi-photo comparison workflow.
+- Add photo role tagging.
+- Add overview, affected, healthy comparison, close-up, drone, and sensor/equipment image roles.
+- Add photo checklist to generated reports.
+- Improve multi-photo comparison workflow.
 - Add soil moisture CSV parser.
 - Add irrigation schedule template.
 - Add weekly field summary workflow.

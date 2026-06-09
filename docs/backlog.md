@@ -23,6 +23,8 @@ Use this as the first GitHub issue list after launch.
 - Add dashboard filters by scenario and risk.
 - Add saved weather snapshots by area.
 - Add forecast risk warnings.
+- Add required photo checklist per scenario.
+- Add visual before/after comparison mode.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.
