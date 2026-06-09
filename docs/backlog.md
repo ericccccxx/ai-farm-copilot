@@ -31,6 +31,8 @@ Use this as the first GitHub issue list after launch.
 - Add batch naming guide to docs.
 - Add JSON schema validation.
 - Add Raspberry Pi camera capture example.
+- Add NDVI map upload.
+- Add area-level NDVI trend chart.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.

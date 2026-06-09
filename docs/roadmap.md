@@ -101,6 +101,12 @@ Success metric:
 - Add JSON import for sensor gateway readings.
 - Add pasted JSON and sample JSON workflows.
 
+## V0.11: Vegetation Index
+
+- Add NDVI calculation from NIR and Red values.
+- Add vegetation vigor status.
+- Add NDVI values to generated reports.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.

@@ -502,7 +502,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, and sensor notes into saved area-level scouting reports. This V0.10 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved area-level scouting reports. This V0.11 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -620,6 +620,21 @@ rainfall_mm: 0</textarea>
           <button id="sampleJson" class="secondary" type="button">Use Sample JSON</button>
         </div>
 
+        <div class="grid-two">
+          <div>
+            <label for="nirValue">NIR value</label>
+            <input id="nirValue" value="0.62" />
+          </div>
+          <div>
+            <label for="redValue">Red value</label>
+            <input id="redValue" value="0.28" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="calculateNdvi" class="secondary" type="button">Calculate NDVI</button>
+          <button id="sampleNdvi" class="secondary" type="button">Use Sample NDVI</button>
+        </div>
+
         <label for="notes">Observation</label>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
@@ -716,6 +731,8 @@ rainfall_mm: 0</textarea>
       const csvFileEl = document.getElementById("csvFile");
       const jsonFileEl = document.getElementById("jsonFile");
       const jsonInputEl = document.getElementById("jsonInput");
+      const nirValueEl = document.getElementById("nirValue");
+      const redValueEl = document.getElementById("redValue");
       const notesEl = document.getElementById("notes");
       const photoEl = document.getElementById("photo");
       const previewEl = document.getElementById("preview");
@@ -1020,6 +1037,41 @@ rainfall_mm: 0</textarea>
         };
         jsonInputEl.value = JSON.stringify(sample, null, 2);
         summarizeJsonData(sample, "Sample JSON");
+      }
+
+      function ndviStatus(ndvi) {
+        if (ndvi >= 0.6) return "High vigor";
+        if (ndvi >= 0.35) return "Moderate vigor";
+        if (ndvi >= 0.2) return "Low vigor";
+        return "Very low vegetation signal";
+      }
+
+      function calculateNdvi() {
+        const nir = Number(nirValueEl.value);
+        const red = Number(redValueEl.value);
+        if (!Number.isFinite(nir) || !Number.isFinite(red) || nir + red === 0) {
+          showStatus("Enter valid NIR and Red values first.");
+          return;
+        }
+
+        const ndvi = (nir - red) / (nir + red);
+        const rounded = Math.round(ndvi * 1000) / 1000;
+        const status = ndviStatus(rounded);
+        sensorDataEl.value = [
+          sensorDataEl.value.trim(),
+          `ndvi: ${rounded}`,
+          `ndvi_status: ${status}`,
+          `nir_value: ${nir}`,
+          `red_value: ${red}`
+        ].filter(Boolean).join("\n");
+        showStatus(`NDVI calculated: ${rounded} (${status}).`);
+        buildReport();
+      }
+
+      function useSampleNdvi() {
+        nirValueEl.value = "0.62";
+        redValueEl.value = "0.28";
+        calculateNdvi();
       }
 
       function photoChecklistItems() {
@@ -1366,7 +1418,7 @@ rainfall_mm: 0</textarea>
         if (manual !== "auto") return manual;
 
         const text = `${notesEl.value} ${weatherEl.value} ${soilEl.value} ${sensorDataEl.value}`.toLowerCase();
-        const highWords = ["spreading", "dead", "severe", "large area", "rapid", "wilting", "disease"];
+        const highWords = ["spreading", "dead", "severe", "large area", "rapid", "wilting", "disease", "very low vegetation"];
         const mediumWords = ["yellow", "brown", "curl", "patch", "dry", "hot", "spots", "pale"];
 
         if (highWords.some((word) => text.includes(word))) return "high";
@@ -1653,13 +1705,15 @@ rainfall_mm: 0</textarea>
       document.getElementById("sampleCsv").addEventListener("click", useSampleCsv);
       document.getElementById("importJson").addEventListener("click", importJson);
       document.getElementById("sampleJson").addEventListener("click", useSampleJson);
+      document.getElementById("calculateNdvi").addEventListener("click", calculateNdvi);
+      document.getElementById("sampleNdvi").addEventListener("click", useSampleNdvi);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);
 
-      [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, notesEl].forEach((node) => {
+      [riskInputEl, cropEl, areaEl, soilEl, weatherEl, latitudeEl, longitudeEl, irrigationEl, treatmentEl, sensorDataEl, nirValueEl, redValueEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);
       });
 
