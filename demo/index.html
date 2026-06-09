@@ -463,6 +463,19 @@
         font-size: 13px;
       }
 
+      .agent-prompt {
+        margin-top: 22px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+
+      .agent-prompt textarea {
+        min-height: 210px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        background: #fbfcfa;
+      }
+
       @media (max-width: 940px) {
         main,
         .report-layout {
@@ -506,6 +519,7 @@
         header,
         .panel,
         .side-card,
+        .agent-prompt,
         .note,
         .status-line {
           display: none !important;
@@ -551,7 +565,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.13 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.14 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -758,6 +772,15 @@ rainfall_mm: 0</textarea>
 
             <h3>7-Day Care Plan</h3>
             <ol id="outCarePlan"></ol>
+
+            <div class="agent-prompt">
+              <h3>Agent Prompt</h3>
+              <textarea id="outAdvisorPrompt" readonly></textarea>
+              <div class="actions">
+                <button id="copyPrompt" class="secondary" type="button">Copy Prompt</button>
+                <button id="downloadPrompt" class="secondary" type="button">Download Prompt</button>
+              </div>
+            </div>
           </div>
 
           <aside class="side-card">
@@ -919,6 +942,7 @@ rainfall_mm: 0</textarea>
       };
 
       let latestReport = "";
+      let latestAdvisorPrompt = "";
 
       function sentenceList(text) {
         return text
@@ -1628,6 +1652,25 @@ rainfall_mm: 0</textarea>
           "Use this report as scouting support. Review high-risk decisions with a qualified local professional."
         ].join("\n");
 
+        latestAdvisorPrompt = [
+          "Use the AI Farm Copilot skill as a cautious farm, garden, vineyard, orchard, or turf scouting assistant.",
+          "",
+          "Task:",
+          "Review the inspection context and draft a practical next-step plan. Separate observed facts from assumptions. Flag missing evidence. Do not present chemical, irrigation, disease, or pest decisions as confirmed diagnoses without local expert review.",
+          "",
+          "Current inspection report:",
+          latestReport,
+          "",
+          "Requested output:",
+          "1. Brief summary",
+          "2. Most likely causes, with confidence language",
+          "3. Immediate checks to perform",
+          "4. 7-day care plan",
+          "5. When to ask a qualified local professional"
+        ].join("\n");
+
+        document.getElementById("outAdvisorPrompt").value = latestAdvisorPrompt;
+
         return {
           id: Date.now(),
           createdAt: new Date().toISOString(),
@@ -1648,6 +1691,7 @@ rainfall_mm: 0</textarea>
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
           photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role, date: photo.date, areaHint: photo.areaHint })),
+          advisorPrompt: latestAdvisorPrompt,
           report: latestReport
         };
       }
@@ -1684,6 +1728,35 @@ rainfall_mm: 0</textarea>
       function printReport() {
         buildReport();
         window.print();
+      }
+
+      async function copyAdvisorPrompt() {
+        if (!latestAdvisorPrompt) buildReport();
+        const promptEl = document.getElementById("outAdvisorPrompt");
+        try {
+          await navigator.clipboard.writeText(latestAdvisorPrompt);
+          showStatus("Advisor prompt copied.");
+        } catch (error) {
+          promptEl.focus();
+          promptEl.select();
+          document.execCommand("copy");
+          showStatus("Advisor prompt copied.");
+        }
+      }
+
+      function downloadAdvisorPrompt() {
+        if (!latestAdvisorPrompt) buildReport();
+        const blob = new Blob([latestAdvisorPrompt], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const stamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `ai-farm-copilot-advisor-prompt-${stamp}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showStatus("Advisor prompt downloaded.");
       }
 
       function saveRecord() {
@@ -1825,6 +1898,8 @@ rainfall_mm: 0</textarea>
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("printReport").addEventListener("click", printReport);
+      document.getElementById("copyPrompt").addEventListener("click", copyAdvisorPrompt);
+      document.getElementById("downloadPrompt").addEventListener("click", downloadAdvisorPrompt);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);

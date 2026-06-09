@@ -33,7 +33,7 @@ Use this as the first GitHub issue list after launch.
 - Add Raspberry Pi camera capture example.
 - Add NDVI map upload.
 - Add area-level NDVI trend chart.
-- Add advisor prompt export for Codex and Claude.
+- Add agent prompt presets for vineyard, orchard, golf turf, and home garden workflows.
 - Add advisor summary by saved record history.
 - Add server-rendered PDF export for hosted deployments.
 - Add richer scenario-specific report changes.

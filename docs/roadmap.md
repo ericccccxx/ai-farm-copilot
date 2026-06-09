@@ -121,6 +121,12 @@ Success metric:
 - Add Save as PDF report export through the browser print dialog.
 - Add print-specific report layout for cleaner field reports.
 
+## V0.14: Agent Prompt Export
+
+- Generate a copyable advisor prompt from the current inspection report.
+- Add prompt download for Codex, Claude, and other agent workflows.
+- Include safety boundaries, missing evidence, and requested output structure in the prompt.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.
