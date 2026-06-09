@@ -21,6 +21,8 @@ Use this as the first GitHub issue list after launch.
 - Add saved record search.
 - Add historical area health trend chart.
 - Add dashboard filters by scenario and risk.
+- Add saved weather snapshots by area.
+- Add forecast risk warnings.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.

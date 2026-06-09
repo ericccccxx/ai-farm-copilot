@@ -59,23 +59,29 @@ Success metric:
 - Add managed area deletion.
 - Add clear local demo data control.
 
-## V0.6: Photo Intake and Weather
+## V0.6: Weather Import
+
+- Add latitude and longitude inputs.
+- Add Open-Meteo current weather import.
+- Add sample weather fallback for offline demos.
+- Write imported weather into report context and sensor notes.
+
+## V0.7: Photo Intake
 
 - Improve photo intake checklist.
 - Add multi-photo comparison workflow.
-- Add weather API adapter.
 - Add soil moisture CSV parser.
 - Add irrigation schedule template.
 - Add weekly field summary workflow.
 
-## V0.7: Camera and Drone Workflow
+## V0.8: Camera and Drone Workflow
 
 - Add batch photo naming convention.
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
 
-## V0.8: Sensor Kit Support
+## V0.9: Sensor Kit Support
 
 - Add ESP32 JSON template.
 - Add Raspberry Pi camera workflow.
