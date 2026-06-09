@@ -18,9 +18,7 @@ Use this as the first GitHub issue list after launch.
 
 ## Demo
 
-- Add report delete button.
 - Add saved record search.
-- Add managed area delete/edit controls.
 - Add historical area health trend chart.
 - Add dashboard filters by scenario and risk.
 - Add PDF report export.

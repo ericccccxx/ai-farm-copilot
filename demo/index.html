@@ -186,6 +186,11 @@
         background: #fff5d6;
       }
 
+      button.danger {
+        color: #8f2d25;
+        background: #fde8e5;
+      }
+
       button:hover {
         filter: brightness(0.95);
       }
@@ -338,6 +343,21 @@
         font-size: 12px;
       }
 
+      .item-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .mini-button {
+        min-height: auto;
+        padding: 8px 10px;
+        color: #8f2d25;
+        background: #fde8e5;
+        font-size: 12px;
+      }
+
       .area-item.active {
         border-color: var(--canopy);
         background: #edf7f0;
@@ -465,7 +485,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.4 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.5 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -497,6 +517,10 @@
           </div>
         </div>
         <button id="addArea" class="secondary" type="button">Add Managed Area</button>
+        <div class="actions">
+          <button id="updateArea" class="secondary" type="button">Update Current Area</button>
+          <button id="deleteArea" class="danger" type="button">Delete Current Area</button>
+        </div>
 
         <div class="grid-two">
           <div>
@@ -556,6 +580,7 @@ rainfall_mm: 0</textarea>
           <button id="download" class="secondary">Download Report</button>
           <button id="saveReport" class="secondary">Save Record</button>
           <button id="exportHistory" class="warning">Export History</button>
+          <button id="clearData" class="danger">Clear Local Data</button>
         </div>
         <div id="statusLine" class="status-line"></div>
 
@@ -869,6 +894,40 @@ rainfall_mm: 0</textarea>
         showStatus("Managed area added.");
       }
 
+      function updateCurrentArea() {
+        const areas = getAreas();
+        const area = areas.find((item) => item.id === selectedAreaId);
+        if (!area) return;
+        const defaults = scenarioDefaults[scenarioEl.value];
+        area.name = newAreaNameEl.value.trim() || area.name;
+        area.size = newAreaSizeEl.value.trim() || areaEl.value || area.size;
+        area.scenario = scenarioEl.value;
+        area.crop = cropEl.value || defaults.crop;
+        setAreas(areas);
+        renderManagedAreas();
+        renderDashboard();
+        updateAreaSummary();
+        showStatus("Current managed area updated.");
+      }
+
+      function deleteCurrentArea() {
+        const areas = getAreas();
+        if (areas.length <= 1) {
+          showStatus("At least one managed area is required.");
+          return;
+        }
+        const area = getSelectedArea();
+        const confirmed = window.confirm(`Delete ${area.name}? Saved records for this area will stay in history but will no longer be attached to an active area.`);
+        if (!confirmed) return;
+
+        const nextAreas = areas.filter((item) => item.id !== area.id);
+        setAreas(nextAreas);
+        selectedAreaId = nextAreas[0].id;
+        localStorage.setItem(selectedAreaKey, selectedAreaId);
+        selectManagedArea(selectedAreaId);
+        showStatus("Managed area deleted.");
+      }
+
       function renderManagedAreas() {
         const areas = getAreas();
         const records = getRecords();
@@ -1103,6 +1162,33 @@ rainfall_mm: 0</textarea>
         showStatus("Inspection record saved locally.");
       }
 
+      function deleteRecord(recordId) {
+        const records = getRecords().filter((record) => record.id !== recordId);
+        setRecords(records);
+        renderManagedAreas();
+        renderSavedRecords();
+        renderDashboard();
+        updateAreaSummary();
+        showStatus("Inspection record deleted.");
+      }
+
+      function clearLocalData() {
+        const confirmed = window.confirm("Clear all local demo records and custom managed areas?");
+        if (!confirmed) return;
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(areasKey);
+        localStorage.removeItem(selectedAreaKey);
+        selectedAreaId = "vineyard-block-a";
+        loadedPhotos = [];
+        previewEl.innerHTML = '<div class="photo-empty"><strong>Photo preview</strong><br /><small>Upload plant, vine, tree, turf, or drone images.</small></div>';
+        sideImageEl.innerHTML = "";
+        sideNoteEl.textContent = "No photo loaded yet. The live skill can use uploaded images plus field context to guide the inspection workflow.";
+        photoEl.value = "";
+        selectManagedArea(selectedAreaId);
+        renderSavedRecords();
+        showStatus("Local demo data cleared.");
+      }
+
       function exportHistory() {
         const records = getRecords();
         const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json;charset=utf-8" });
@@ -1151,13 +1237,22 @@ rainfall_mm: 0</textarea>
         }
 
         records.slice(0, 6).forEach((record) => {
+          const row = document.createElement("div");
+          row.className = "item-row";
           const button = document.createElement("button");
           button.className = "saved-item";
           button.type = "button";
           const date = new Date(record.createdAt).toLocaleString();
           button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.areaName || record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
           button.addEventListener("click", () => loadRecord(record));
-          savedListEl.appendChild(button);
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "mini-button";
+          deleteButton.type = "button";
+          deleteButton.textContent = "Delete";
+          deleteButton.addEventListener("click", () => deleteRecord(record.id));
+          row.appendChild(button);
+          row.appendChild(deleteButton);
+          savedListEl.appendChild(row);
         });
       }
 
@@ -1174,10 +1269,13 @@ rainfall_mm: 0</textarea>
 
       scenarioEl.addEventListener("change", applyScenarioDefaults);
       document.getElementById("addArea").addEventListener("click", addManagedArea);
+      document.getElementById("updateArea").addEventListener("click", updateCurrentArea);
+      document.getElementById("deleteArea").addEventListener("click", deleteCurrentArea);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
+      document.getElementById("clearData").addEventListener("click", clearLocalData);
 
       [riskInputEl, cropEl, areaEl, soilEl, weatherEl, irrigationEl, treatmentEl, sensorDataEl, notesEl].forEach((node) => {
         node.addEventListener("input", buildReport);

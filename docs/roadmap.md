@@ -52,7 +52,14 @@ Success metric:
 - Add risk bars by managed area.
 - Add latest inspection status by area.
 
-## V0.5: Photo Intake and Weather
+## V0.5: Local Data Management
+
+- Add saved record deletion.
+- Add managed area update.
+- Add managed area deletion.
+- Add clear local demo data control.
+
+## V0.6: Photo Intake and Weather
 
 - Improve photo intake checklist.
 - Add multi-photo comparison workflow.
@@ -61,14 +68,14 @@ Success metric:
 - Add irrigation schedule template.
 - Add weekly field summary workflow.
 
-## V0.6: Camera and Drone Workflow
+## V0.7: Camera and Drone Workflow
 
 - Add batch photo naming convention.
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
 
-## V0.7: Sensor Kit Support
+## V0.8: Sensor Kit Support
 
 - Add ESP32 JSON template.
 - Add Raspberry Pi camera workflow.
