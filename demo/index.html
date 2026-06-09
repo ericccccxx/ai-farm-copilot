@@ -496,13 +496,62 @@
           padding: 18px;
         }
       }
+
+      @media print {
+        body {
+          background: #ffffff;
+          color: #17261f;
+        }
+
+        header,
+        .panel,
+        .side-card,
+        .note,
+        .status-line {
+          display: none !important;
+        }
+
+        main {
+          display: block;
+          max-width: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .report {
+          border: 0;
+          box-shadow: none;
+          padding: 0;
+        }
+
+        .report-layout {
+          display: block;
+        }
+
+        .meta,
+        .dashboard,
+        .area-health,
+        .causes {
+          break-inside: avoid;
+        }
+
+        h2,
+        h3 {
+          break-after: avoid;
+        }
+
+        button,
+        a {
+          color: inherit;
+        }
+      }
     </style>
   </head>
   <body>
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.12 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.13 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -641,6 +690,7 @@ rainfall_mm: 0</textarea>
         <div class="actions">
           <button id="generate">Generate Report</button>
           <button id="download" class="secondary">Download Report</button>
+          <button id="printReport" class="secondary">Print / Save PDF</button>
           <button id="saveReport" class="secondary">Save Record</button>
           <button id="exportHistory" class="warning">Export History</button>
           <button id="clearData" class="danger">Clear Local Data</button>
@@ -1631,6 +1681,11 @@ rainfall_mm: 0</textarea>
         URL.revokeObjectURL(url);
       }
 
+      function printReport() {
+        buildReport();
+        window.print();
+      }
+
       function saveRecord() {
         const record = buildReport();
         const records = getRecords();
@@ -1769,6 +1824,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("sampleNdvi").addEventListener("click", useSampleNdvi);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
+      document.getElementById("printReport").addEventListener("click", printReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);

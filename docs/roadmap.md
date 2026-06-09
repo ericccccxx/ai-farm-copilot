@@ -115,6 +115,12 @@ Success metric:
 - Add 7-day care plan.
 - Add compatibility notes for adjacent farm advisor skills.
 
+## V0.13: Report Export
+
+- Add browser print workflow.
+- Add Save as PDF report export through the browser print dialog.
+- Add print-specific report layout for cleaner field reports.
+
 ## V1: Commercial-Ready Layer
 
 - Hosted dashboard.
