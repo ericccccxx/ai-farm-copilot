@@ -495,7 +495,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, local context, and simple sensor notes into saved area-level scouting reports. This V0.7 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, local context, CSV readings, and simple sensor notes into saved area-level scouting reports. This V0.8 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -597,6 +597,13 @@ air_temperature_c: 34
 humidity_percent: 42
 rainfall_mm: 0</textarea>
 
+        <label for="csvFile">Import CSV data</label>
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <div class="actions">
+          <button id="importCsv" class="secondary" type="button">Import CSV</button>
+          <button id="sampleCsv" class="secondary" type="button">Use Sample CSV</button>
+        </div>
+
         <label for="notes">Observation</label>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
@@ -690,6 +697,7 @@ rainfall_mm: 0</textarea>
       const irrigationEl = document.getElementById("irrigation");
       const treatmentEl = document.getElementById("treatment");
       const sensorDataEl = document.getElementById("sensorData");
+      const csvFileEl = document.getElementById("csvFile");
       const notesEl = document.getElementById("notes");
       const photoEl = document.getElementById("photo");
       const previewEl = document.getElementById("preview");
@@ -840,6 +848,78 @@ rainfall_mm: 0</textarea>
           .slice(0, 8);
 
         return rows.length ? rows : ["No sensor readings provided."];
+      }
+
+      function parseCsv(text) {
+        const rows = text
+          .trim()
+          .split(/\r?\n/)
+          .map((line) => line.split(",").map((cell) => cell.trim().replace(/^"|"$/g, "")))
+          .filter((row) => row.length && row.some(Boolean));
+        if (rows.length < 2) return [];
+
+        const headers = rows[0];
+        return rows.slice(1).map((row) => {
+          return headers.reduce((record, header, index) => {
+            record[header || `field_${index + 1}`] = row[index] || "";
+            return record;
+          }, {});
+        });
+      }
+
+      function summarizeCsvRecords(records, source) {
+        if (!records.length) {
+          showStatus("CSV did not contain usable rows.");
+          return;
+        }
+
+        const latest = records[records.length - 1];
+        const fields = Object.keys(latest);
+        const preferred = [
+          "timestamp",
+          "date",
+          "location",
+          "soil_moisture_percent",
+          "air_temperature_c",
+          "humidity_percent",
+          "rainfall_mm",
+          "wind_speed_kmh",
+          "observation"
+        ];
+        const selected = preferred.filter((field) => fields.includes(field));
+        const fallback = fields.slice(0, 6);
+        const keys = selected.length ? selected : fallback;
+
+        sensorDataEl.value = [
+          `csv_source: ${source}`,
+          `csv_rows: ${records.length}`,
+          ...keys.map((key) => `${key}: ${latest[key]}`),
+          `csv_fields: ${fields.join(", ")}`
+        ].join("\n");
+
+        const observation = latest.observation || latest.notes || latest.Observation;
+        if (observation) notesEl.value = observation;
+        showStatus(`Imported ${records.length} CSV row(s).`);
+        buildReport();
+      }
+
+      async function importCsv() {
+        const file = csvFileEl.files && csvFileEl.files[0];
+        if (!file) {
+          showStatus("Choose a CSV file first.");
+          return;
+        }
+        const text = await file.text();
+        summarizeCsvRecords(parseCsv(text), file.name);
+      }
+
+      function useSampleCsv() {
+        const sample = [
+          "timestamp,location,soil_moisture_percent,air_temperature_c,humidity_percent,rainfall_mm,wind_speed_kmh,observation",
+          "2026-06-09T08:00:00,vineyard-block-a,31,29,48,0,12,Lower canopy looks normal after irrigation",
+          "2026-06-09T14:00:00,vineyard-block-a,24,34,41,0,18,Lower leaves yellowing and curling on several vines"
+        ].join("\n");
+        summarizeCsvRecords(parseCsv(sample), "Sample CSV");
       }
 
       function photoChecklistItems() {
@@ -1417,6 +1497,8 @@ rainfall_mm: 0</textarea>
       document.getElementById("deleteArea").addEventListener("click", deleteCurrentArea);
       document.getElementById("fetchWeather").addEventListener("click", fetchWeather);
       document.getElementById("sampleWeather").addEventListener("click", useSampleWeather);
+      document.getElementById("importCsv").addEventListener("click", importCsv);
+      document.getElementById("sampleCsv").addEventListener("click", useSampleCsv);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("saveReport").addEventListener("click", saveRecord);

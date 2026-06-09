@@ -25,6 +25,8 @@ Use this as the first GitHub issue list after launch.
 - Add forecast risk warnings.
 - Add required photo checklist per scenario.
 - Add visual before/after comparison mode.
+- Add CSV field mapping controls.
+- Add CSV trend summary by managed area.
 - Add PDF report export.
 - Add richer scenario-specific report changes.
 - Add mobile layout polish.

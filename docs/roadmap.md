@@ -76,14 +76,21 @@ Success metric:
 - Add irrigation schedule template.
 - Add weekly field summary workflow.
 
-## V0.8: Camera and Drone Workflow
+## V0.8: CSV Import
+
+- Add CSV file input.
+- Parse sensor readings and inspection logs.
+- Write latest CSV row into sensor notes.
+- Add sample CSV for demos.
+
+## V0.9: Camera and Drone Workflow
 
 - Add batch photo naming convention.
 - Add drone scouting checklist.
 - Add camera mount guidance.
 - Add image comparison workflow by date and block.
 
-## V0.9: Sensor Kit Support
+## V0.10: Sensor Kit Support
 
 - Add ESP32 JSON template.
 - Add Raspberry Pi camera workflow.
