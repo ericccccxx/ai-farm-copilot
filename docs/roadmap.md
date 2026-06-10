@@ -257,9 +257,9 @@ Success metric:
 
 ## V0.36: Pilot Mode
 
-- Add pilot customer workflow for vineyards, orchards, and golf courses.
-- Export weekly reports in Markdown, JSON, and browser PDF.
-- Add pilot intake form and reporting checklist.
+- Add pilot customer workflow for vineyards, orchards, and golf courses. Done in V0.36.
+- Export weekly reports in Markdown, JSON, and browser PDF. Done in V0.36.
+- Add pilot intake form and reporting checklist. Done in V0.36.
 
 ## V1.0: Free Usable Release
 

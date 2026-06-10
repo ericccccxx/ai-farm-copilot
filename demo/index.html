@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, area boundaries, and evidence fusion into one-click advisor-ready scouting reports. This V0.35 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, area boundaries, and evidence fusion into pilot-ready scouting reports. This V0.36 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -958,6 +958,44 @@ rainfall_mm: 0</textarea>
         </div>
         <div id="statusLine" class="status-line"></div>
 
+        <h3>Pilot Mode</h3>
+        <div class="grid-two">
+          <div>
+            <label for="pilotName">Pilot account</label>
+            <input id="pilotName" placeholder="Napa Vineyard Pilot" />
+          </div>
+          <div>
+            <label for="pilotContact">Pilot contact</label>
+            <input id="pilotContact" placeholder="Ops lead or superintendent" />
+          </div>
+        </div>
+        <div class="grid-two">
+          <div>
+            <label for="pilotType">Pilot type</label>
+            <select id="pilotType">
+              <option value="vineyard">Vineyard</option>
+              <option value="orchard">Orchard</option>
+              <option value="golf">Golf course</option>
+            </select>
+          </div>
+          <div>
+            <label for="pilotCadence">Reporting cadence</label>
+            <select id="pilotCadence">
+              <option value="weekly">Weekly</option>
+              <option value="twice-weekly">Twice weekly</option>
+              <option value="event-based">Event based</option>
+            </select>
+          </div>
+        </div>
+        <label for="pilotGoal">Pilot goal</label>
+        <textarea id="pilotGoal" placeholder="Reduce missed stress signals, create weekly scouting reports, and compare high-risk areas."></textarea>
+        <div class="actions">
+          <button id="savePilot" class="secondary" type="button">Save Pilot Intake</button>
+          <button id="exportWeeklyMarkdown" class="secondary" type="button">Export Weekly Markdown</button>
+          <button id="exportWeeklyJson" class="secondary" type="button">Export Weekly JSON</button>
+          <button id="printWeeklyReport" class="secondary" type="button">Print Weekly PDF</button>
+        </div>
+
         <h3>Saved Records</h3>
         <div class="saved-controls">
           <input id="savedSearch" placeholder="Search saved records" />
@@ -1029,6 +1067,9 @@ rainfall_mm: 0</textarea>
 
         <h3>Area Detail</h3>
         <div id="areaDetail" class="area-detail"></div>
+
+        <h3>Pilot Reporting Checklist</h3>
+        <div id="pilotChecklist" class="area-detail"></div>
 
         <h3>Location Map</h3>
         <div id="locationMap" class="location-map"></div>
@@ -1142,11 +1183,18 @@ rainfall_mm: 0</textarea>
       const savedSortEl = document.getElementById("savedSort");
       const savedDateFilterEl = document.getElementById("savedDateFilter");
       const savedListEl = document.getElementById("savedList");
+      const pilotNameEl = document.getElementById("pilotName");
+      const pilotContactEl = document.getElementById("pilotContact");
+      const pilotTypeEl = document.getElementById("pilotType");
+      const pilotCadenceEl = document.getElementById("pilotCadence");
+      const pilotGoalEl = document.getElementById("pilotGoal");
+      const pilotChecklistEl = document.getElementById("pilotChecklist");
       const statusLineEl = document.getElementById("statusLine");
       const storageKey = "aiFarmCopilotRecords";
       const areasKey = "aiFarmCopilotAreas";
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
       const mapLayerKey = "aiFarmCopilotMapLayer";
+      const pilotKey = "aiFarmCopilotPilot";
       let loadedPhotos = [];
       let photoEvidenceEnabled = false;
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
@@ -1828,6 +1876,41 @@ rainfall_mm: 0</textarea>
 
       function setRecords(records) {
         localStorage.setItem(storageKey, JSON.stringify(records.slice(0, 25)));
+      }
+
+      function getPilot() {
+        try {
+          return JSON.parse(localStorage.getItem(pilotKey) || "{}");
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function setPilot(pilot) {
+        localStorage.setItem(pilotKey, JSON.stringify(pilot));
+      }
+
+      function loadPilot() {
+        const pilot = getPilot();
+        pilotNameEl.value = pilot.name || "";
+        pilotContactEl.value = pilot.contact || "";
+        pilotTypeEl.value = pilot.type || "vineyard";
+        pilotCadenceEl.value = pilot.cadence || "weekly";
+        pilotGoalEl.value = pilot.goal || "";
+      }
+
+      function savePilot() {
+        const pilot = {
+          name: pilotNameEl.value.trim(),
+          contact: pilotContactEl.value.trim(),
+          type: pilotTypeEl.value,
+          cadence: pilotCadenceEl.value,
+          goal: pilotGoalEl.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+        setPilot(pilot);
+        renderPilotChecklist();
+        showStatus("Pilot intake saved locally.");
       }
 
       function defaultAreas() {
@@ -2800,6 +2883,14 @@ rainfall_mm: 0</textarea>
         });
       }
 
+      function renderPilotChecklist() {
+        const items = pilotChecklistItems();
+        pilotChecklistEl.innerHTML = `
+          <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          <p><strong>Weekly exports:</strong> Markdown and JSON are downloadable. Use Print Weekly PDF for a browser Save as PDF workflow.</p>
+        `;
+      }
+
       function inferRisk() {
         const manual = riskInputEl.value;
         if (manual !== "auto") return manual;
@@ -2894,6 +2985,7 @@ rainfall_mm: 0</textarea>
         const satelliteNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_ndvi");
         const satellitePreviousNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_previous_ndvi");
         const satelliteNdviTrend = satelliteTrendFromText(sensorDataEl.value);
+        const pilot = getPilot();
         const fusion = evidenceFusion(defaults, risk, selectedArea, getRecords(), sensors, observations, photoEvidence);
         const fusionItems = [
           `Fusion score: ${fusion.score}/100 (${fusion.label}).`,
@@ -2907,6 +2999,8 @@ rainfall_mm: 0</textarea>
           `Inspection time: ${localTime}`,
           `Timezone: ${timezone}`,
           `Timestamp: ${timestamp}`,
+          `Pilot account: ${pilot.name || "Not set"}`,
+          `Pilot cadence: ${pilot.cadence || "Not set"}`,
           `Scenario: ${defaults.label}`,
           `Managed area: ${cropEl.value || defaults.crop}`,
           `Area size: ${areaEl.value || "Not provided"}`,
@@ -3012,6 +3106,7 @@ rainfall_mm: 0</textarea>
           timezone,
           areaId: selectedArea.id,
           areaName: selectedArea.name,
+          pilot,
           scenario: defaults.label,
           crop: cropEl.value || defaults.crop,
           area: areaEl.value || "",
@@ -3142,6 +3237,145 @@ rainfall_mm: 0</textarea>
         showStatus("Evidence packet downloaded.");
       }
 
+      function weeklyPilotRecords() {
+        const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        return getRecords().filter((record) => {
+          const createdAt = new Date(record.createdAt).getTime();
+          return Number.isFinite(createdAt) && createdAt >= cutoff;
+        });
+      }
+
+      function pilotChecklistItems(records = weeklyPilotRecords()) {
+        const pilot = getPilot();
+        const highRisk = records.filter((record) => record.risk === "High").length;
+        return [
+          pilot.name ? `Pilot account saved: ${pilot.name}` : "Add pilot account name.",
+          pilot.contact ? `Pilot contact saved: ${pilot.contact}` : "Add pilot contact or owner.",
+          pilot.goal ? "Pilot goal captured." : "Add pilot goal and success criteria.",
+          records.length ? `${records.length} inspection record(s) saved in the last 7 days.` : "Save at least one weekly inspection record.",
+          highRisk ? `${highRisk} high-risk item(s) need review.` : "No high-risk saved records this week.",
+          records.some((record) => record.areaBoundaryPointCount >= 3) ? "At least one bounded area is available." : "Add an area boundary for satellite workflows.",
+          records.some((record) => record.photoEvidenceEnabled) ? "Photo evidence included in weekly records." : "Run photo evidence on at least one record.",
+          records.some((record) => record.evidenceFusionScore) ? "Evidence Fusion Score included." : "Generate a report with Evidence Fusion Score."
+        ];
+      }
+
+      function weeklyPilotReport() {
+        const pilot = getPilot();
+        const records = weeklyPilotRecords();
+        const highRisk = records.filter((record) => record.risk === "High").length;
+        const avgFusion = records.length
+          ? Math.round(records.reduce((sum, record) => sum + Number(record.evidenceFusionScore || 0), 0) / records.length)
+          : 0;
+        const latest = records[0];
+        return {
+          report_type: "ai_farm_copilot_weekly_pilot_report",
+          version: "V0.36",
+          generated_at: new Date().toISOString(),
+          pilot,
+          summary: {
+            records_last_7_days: records.length,
+            high_risk_records: highRisk,
+            average_fusion_score: avgFusion,
+            latest_risk: latest?.risk || "None",
+            latest_satellite_trend: latest?.satelliteNdviTrend || "None"
+          },
+          checklist: pilotChecklistItems(records),
+          records: records.slice(0, 12).map((record) => ({
+            createdAt: record.createdAt,
+            areaName: record.areaName,
+            scenario: record.scenario,
+            crop: record.crop,
+            risk: record.risk,
+            followUp: record.followUp,
+            fusionScore: record.evidenceFusionScore || 0,
+            satelliteTrend: record.satelliteNdviTrend || "None",
+            photoCount: record.photoCount || 0,
+            boundaryPoints: record.areaBoundaryPointCount || 0,
+            nextAction: record.report?.match(/## Recommended Next Actions\n([\s\S]*?)\n\n## Do Not Do Yet/)?.[1]?.split("\n")[0]?.replace(/^\d+\.\s*/, "") || "Review saved report."
+          }))
+        };
+      }
+
+      function weeklyPilotMarkdown(report = weeklyPilotReport()) {
+        return [
+          "# AI Farm Copilot Weekly Pilot Report",
+          "",
+          `- Pilot account: ${report.pilot.name || "Not set"}`,
+          `- Pilot contact: ${report.pilot.contact || "Not set"}`,
+          `- Pilot type: ${report.pilot.type || "Not set"}`,
+          `- Cadence: ${report.pilot.cadence || "weekly"}`,
+          `- Goal: ${report.pilot.goal || "Not set"}`,
+          `- Generated: ${report.generated_at}`,
+          "",
+          "## Summary",
+          `- Records last 7 days: ${report.summary.records_last_7_days}`,
+          `- High-risk records: ${report.summary.high_risk_records}`,
+          `- Average fusion score: ${report.summary.average_fusion_score}`,
+          `- Latest risk: ${report.summary.latest_risk}`,
+          `- Latest satellite trend: ${report.summary.latest_satellite_trend}`,
+          "",
+          "## Reporting Checklist",
+          ...report.checklist.map((item) => `- ${item}`),
+          "",
+          "## Recent Records",
+          ...(report.records.length ? report.records.map((record, index) => `${index + 1}. ${record.areaName} - ${record.risk} - fusion ${record.fusionScore} - ${record.nextAction}`) : ["- No saved records in the last 7 days."]),
+          "",
+          "## Safety Boundary",
+          "Use this weekly report as scouting support. Review treatment, irrigation, disease, pest, and compliance decisions with qualified local professionals."
+        ].join("\n");
+      }
+
+      function downloadTextFile(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function exportWeeklyMarkdown() {
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadTextFile(weeklyPilotMarkdown(), `ai-farm-copilot-weekly-pilot-${stamp}.md`, "text/markdown;charset=utf-8");
+        showStatus("Weekly pilot Markdown exported.");
+      }
+
+      function exportWeeklyJson() {
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadTextFile(JSON.stringify(weeklyPilotReport(), null, 2), `ai-farm-copilot-weekly-pilot-${stamp}.json`, "application/json;charset=utf-8");
+        showStatus("Weekly pilot JSON exported.");
+      }
+
+      function printWeeklyReport() {
+        const content = weeklyPilotMarkdown();
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          showStatus("Popup blocked. Export Markdown first or allow popups to print weekly PDF.");
+          return;
+        }
+        printWindow.document.write(`
+          <!doctype html>
+          <html>
+            <head>
+              <title>Weekly Pilot Report</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 32px; color: #17221e; }
+                pre { white-space: pre-wrap; line-height: 1.45; font-family: Arial, sans-serif; }
+              </style>
+            </head>
+            <body><pre>${escapeHtml(content)}</pre></body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        showStatus("Use the print dialog to save the weekly pilot report as PDF.");
+      }
+
       function oneClickAiReport() {
         const defaults = scenarioDefaults[scenarioEl.value];
         if (!notesEl.value.trim()) {
@@ -3198,6 +3432,7 @@ rainfall_mm: 0</textarea>
         renderDashboard();
         updateAreaSummary();
         renderLocationMap();
+        renderPilotChecklist();
         showStatus("Inspection record saved locally.");
       }
 
@@ -3209,6 +3444,7 @@ rainfall_mm: 0</textarea>
         renderDashboard();
         updateAreaSummary();
         renderLocationMap();
+        renderPilotChecklist();
         showStatus("Inspection record deleted.");
       }
 
@@ -3219,14 +3455,17 @@ rainfall_mm: 0</textarea>
         localStorage.removeItem(areasKey);
         localStorage.removeItem(selectedAreaKey);
         localStorage.removeItem(mapLayerKey);
+        localStorage.removeItem(pilotKey);
         selectedAreaId = "vineyard-block-a";
         selectedMapLayer = "field";
         loadedPhotos = [];
         photoEvidenceEnabled = false;
+        loadPilot();
         renderPhotoPreviews();
         photoEl.value = "";
         selectManagedArea(selectedAreaId);
         renderSavedRecords();
+        renderPilotChecklist();
         showStatus("Local demo data cleared.");
       }
 
@@ -3397,6 +3636,10 @@ rainfall_mm: 0</textarea>
       document.getElementById("downloadEvidencePacket").addEventListener("click", downloadEvidencePacket);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);
+      document.getElementById("savePilot").addEventListener("click", savePilot);
+      document.getElementById("exportWeeklyMarkdown").addEventListener("click", exportWeeklyMarkdown);
+      document.getElementById("exportWeeklyJson").addEventListener("click", exportWeeklyJson);
+      document.getElementById("printWeeklyReport").addEventListener("click", printWeeklyReport);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);
       dashboardRiskFilterEl.addEventListener("change", renderDashboard);
       dashboardDateFilterEl.addEventListener("change", renderDashboard);
@@ -3414,11 +3657,13 @@ rainfall_mm: 0</textarea>
       });
 
       buildReport();
+      loadPilot();
       renderManagedAreas();
       renderSavedRecords();
       renderDashboard();
       updateAreaSummary();
       renderLocationMap();
+      renderPilotChecklist();
     </script>
   </body>
 </html>
