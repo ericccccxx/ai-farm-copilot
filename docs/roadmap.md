@@ -239,9 +239,9 @@ Success metric:
 
 ## V0.33: Photo AI Evidence
 
-- Add optional vision-model analysis for uploaded photos.
-- Extract visible symptoms, affected plant parts, image quality, and missing photo requests.
-- Treat photo AI output as evidence, not a final diagnosis.
+- Add optional vision-model analysis for uploaded photos. Done in V0.33.
+- Extract visible symptoms, affected plant parts, image quality, and missing photo requests. Done in V0.33.
+- Treat photo AI output as evidence, not a final diagnosis. Done in V0.33.
 
 ## V0.34: Evidence Fusion Score
 

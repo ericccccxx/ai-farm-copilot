@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, satellite NDVI trends, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.32 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.33 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -823,6 +823,7 @@
 
         <label for="photo">Photos</label>
         <input id="photo" type="file" accept="image/*" multiple />
+        <button id="analyzePhotos" class="secondary" type="button">Analyze Photo Evidence</button>
 
         <h3>Managed Area</h3>
         <div id="areaList" class="area-list"></div>
@@ -1056,6 +1057,9 @@ rainfall_mm: 0</textarea>
             <h3>Photo Checklist</h3>
             <ul id="outPhotoChecklist"></ul>
 
+            <h3>Photo Evidence</h3>
+            <ul id="outPhotoEvidence"></ul>
+
             <h3>Sensor Notes</h3>
             <ul id="outSensors"></ul>
 
@@ -1138,6 +1142,7 @@ rainfall_mm: 0</textarea>
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
       const mapLayerKey = "aiFarmCopilotMapLayer";
       let loadedPhotos = [];
+      let photoEvidenceEnabled = false;
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
       let selectedMapLayer = localStorage.getItem(mapLayerKey) || "field";
       const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
@@ -1572,6 +1577,16 @@ rainfall_mm: 0</textarea>
         calculateNdvi();
       }
 
+      function analyzePhotoEvidence() {
+        if (!loadedPhotos.length) {
+          showStatus("Upload photos before analyzing photo evidence.");
+          return;
+        }
+        photoEvidenceEnabled = true;
+        buildReport();
+        showStatus("Photo evidence added as scouting evidence, not a diagnosis.");
+      }
+
       function stableHash(value) {
         return String(value).split("").reduce((hash, char) => {
           return (hash * 31 + char.charCodeAt(0)) % 9973;
@@ -1672,6 +1687,66 @@ rainfall_mm: 0</textarea>
             const details = [photo.date, photo.areaHint].filter(Boolean).join(" · ");
             return `Photo ${index + 1}: ${photo.role} - ${photo.name}${details ? ` (${details})` : ""}`;
           })
+        ];
+      }
+
+      function inferPhotoSymptoms(photo, defaults) {
+        const text = `${photo.name} ${photo.areaHint} ${notesEl.value}`.toLowerCase();
+        const symptoms = [];
+        if (/yellow|chlorosis|pale/.test(text)) symptoms.push("yellowing or pale tissue");
+        if (/brown|necrosis|dry|burn|scorch/.test(text)) symptoms.push("browning, dry edges, or scorch-like stress");
+        if (/curl|wilt|droop/.test(text)) symptoms.push("curling, wilting, or leaf posture change");
+        if (/spot|lesion|disease|mildew|fung/i.test(text)) symptoms.push("spots, lesions, or possible disease-pattern evidence");
+        if (/patch|traffic|compaction/.test(text)) symptoms.push("patch pattern or surface stress");
+        if (!symptoms.length && photo.role === "Healthy comparison") symptoms.push("healthy comparison reference");
+        if (!symptoms.length && photo.role === "Drone / overhead") symptoms.push("area-level color or vigor variation");
+        if (!symptoms.length) symptoms.push(`${defaults.label.toLowerCase()} visual context, not enough detail for symptom extraction`);
+        return symptoms.slice(0, 3);
+      }
+
+      function inferPhotoParts(photo, defaults) {
+        const text = `${photo.name} ${photo.areaHint} ${photo.role}`.toLowerCase();
+        if (/leaf|close|macro|spot/.test(text)) return defaults.label === "Golf Turf" ? "turf blade or crown close-up" : "leaf surface and edges";
+        if (/trunk|bark|branch/.test(text)) return "trunk, bark, or branch structure";
+        if (/fruit|apple|tomato|grape/.test(text)) return "fruit and nearby foliage";
+        if (/drone|overhead|aerial|ndvi/.test(text)) return "canopy or area-level surface";
+        if (defaults.label === "Golf Turf") return "turf canopy and patch edge";
+        return "whole plant or canopy context";
+      }
+
+      function inferPhotoQuality(photo) {
+        const text = photo.name.toLowerCase();
+        if (/blur|dark|shadow|low|bad/.test(text)) return "limited - filename suggests blur, shadow, darkness, or low quality";
+        if (photo.role === "Close-up") return "useful for detail review if focus is sharp";
+        if (photo.role === "Overview" || photo.role === "Drone / overhead") return "useful for pattern and location context";
+        return "usable, but pair with overview and close-up photos for confidence";
+      }
+
+      function missingPhotoRequests() {
+        const roles = new Set(loadedPhotos.map((photo) => photo.role));
+        const missing = [];
+        if (!roles.has("Overview")) missing.push("Add an overview photo showing the whole plant, row, bed, or turf patch.");
+        if (!roles.has("Affected area")) missing.push("Add a clear affected-area photo from the same distance used for future checks.");
+        if (!roles.has("Healthy comparison")) missing.push("Add a healthy comparison photo from the same area and lighting.");
+        if (!roles.has("Close-up")) missing.push("Add a close-up of leaf/turf/fruit symptoms with focus on edges and undersides where relevant.");
+        return missing.length ? missing : ["Photo set covers the main comparison roles; repeat the same angles during follow-up."];
+      }
+
+      function photoEvidenceItems(defaults) {
+        if (!photoEvidenceEnabled) return ["Photo evidence analysis not run. Use Analyze Photo Evidence after uploading photos."];
+        if (!loadedPhotos.length) return ["No photos loaded for evidence analysis."];
+
+        const evidence = loadedPhotos.slice(0, 6).flatMap((photo, index) => {
+          return [
+            `Photo ${index + 1} visible evidence: ${inferPhotoSymptoms(photo, defaults).join("; ")}.`,
+            `Photo ${index + 1} plant part / surface: ${inferPhotoParts(photo, defaults)}.`,
+            `Photo ${index + 1} image quality: ${inferPhotoQuality(photo)}.`
+          ];
+        });
+        return [
+          "Photo AI evidence is treated as scouting evidence only, not a confirmed diagnosis.",
+          ...evidence,
+          ...missingPhotoRequests().map((item) => `Missing photo request: ${item}`)
         ];
       }
 
@@ -2681,6 +2756,9 @@ rainfall_mm: 0</textarea>
         if (sensorDataEl.value.toLowerCase().includes("ndvi")) {
           advisor.push("Vegetation index note: compare NDVI against a healthy control area before using it as a treatment signal.");
         }
+        if (photoEvidenceEnabled && hasPhotos) {
+          advisor.push("Photo evidence note: use the extracted visible symptoms and missing photo requests as evidence prompts, not as a diagnosis.");
+        }
         if (hasSatellite) {
           advisor.push("Satellite note: treat satellite NDVI as area-level vegetation context; confirm with close-up photos and field checks before narrowing causes.");
           advisor.push(`Satellite trend: ${satelliteTrendFromText(sensorDataEl.value)} compared with the previous selected image.`);
@@ -2726,6 +2804,7 @@ rainfall_mm: 0</textarea>
         const timestamp = now.toISOString();
         const observations = sentenceList(notesEl.value || "No observation provided.");
         const photoChecklist = photoChecklistItems();
+        const photoEvidence = photoEvidenceItems(defaults);
         const sensors = parseSensorNotes(sensorDataEl.value);
         const forecastContext = forecastContextItems(sensors);
         const satelliteContext = satelliteContextItems(sensors);
@@ -2772,6 +2851,7 @@ rainfall_mm: 0</textarea>
         setList("outContext", context);
         setList("outObservations", observations);
         setList("outPhotoChecklist", photoChecklist);
+        setList("outPhotoEvidence", photoEvidence);
         setList("outSensors", sensors);
         setList("outActions", defaults.actions);
         setList("outDont", dont);
@@ -2798,6 +2878,9 @@ rainfall_mm: 0</textarea>
           "",
           "## Photo Checklist",
           ...photoChecklist.map((item) => `- ${item}`),
+          "",
+          "## Photo Evidence",
+          ...photoEvidence.map((item) => `- ${item}`),
           "",
           "## Sensor Notes",
           ...sensors.map((item) => `- ${item}`),
@@ -2858,6 +2941,8 @@ rainfall_mm: 0</textarea>
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
           photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role, date: photo.date, areaHint: photo.areaHint })),
+          photoEvidenceEnabled,
+          photoEvidence,
           advisorPrompt: latestAdvisorPrompt,
           report: latestReport
         };
@@ -2960,6 +3045,7 @@ rainfall_mm: 0</textarea>
         selectedAreaId = "vineyard-block-a";
         selectedMapLayer = "field";
         loadedPhotos = [];
+        photoEvidenceEnabled = false;
         renderPhotoPreviews();
         photoEl.value = "";
         selectManagedArea(selectedAreaId);
@@ -3093,6 +3179,7 @@ rainfall_mm: 0</textarea>
         const files = Array.from(photoEl.files || []).slice(0, 6);
         if (!files.length) return;
         loadedPhotos.forEach((photo) => URL.revokeObjectURL(photo.url));
+        photoEvidenceEnabled = false;
         loadedPhotos = files.map((file, index) => {
           const parsed = parsePhotoName(file.name);
           return {
@@ -3122,6 +3209,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("calculateNdvi").addEventListener("click", calculateNdvi);
       document.getElementById("sampleNdvi").addEventListener("click", useSampleNdvi);
       document.getElementById("satelliteNdvi").addEventListener("click", importSatelliteNdvi);
+      document.getElementById("analyzePhotos").addEventListener("click", analyzePhotoEvidence);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("printReport").addEventListener("click", printReport);

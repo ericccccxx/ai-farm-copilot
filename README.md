@@ -40,9 +40,11 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.32 demo supports:
+The V0.33 demo supports:
 
 - Local multi-image upload and preview.
+- Optional local photo evidence extraction for visible symptoms, affected plant parts, image quality, and missing photo requests.
+- Photo evidence is treated as scouting evidence, not a confirmed diagnosis.
 - Local map location view for current coordinates, managed areas, and saved inspection points.
 - Satellite-style local basemap layer with a field sketch fallback.
 - Local satellite NDVI adapter with cloud-aware recent image selection when an area boundary is available.
@@ -167,6 +169,7 @@ ai-farm-copilot/
 - V0.30: Satellite-style local basemap layer for clearer map context.
 - V0.31: Satellite NDVI data and cloud-aware image selection for bounded areas.
 - V0.32: Satellite NDVI time comparison and trend status.
+- V0.33: Optional photo evidence extraction with missing photo requests.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.
