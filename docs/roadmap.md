@@ -245,9 +245,9 @@ Success metric:
 
 ## V0.34: Evidence Fusion Score
 
-- Combine photo, weather, satellite, history, and sensor signals into a risk score.
-- Show which evidence sources influenced the risk decision.
-- Keep recommendations cautious and evidence-based.
+- Combine photo, weather, satellite, history, and sensor signals into a risk score. Done in V0.34.
+- Show which evidence sources influenced the risk decision. Done in V0.34.
+- Keep recommendations cautious and evidence-based. Done in V0.34.
 
 ## V0.35: One-Click AI Report
 

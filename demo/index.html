@@ -382,7 +382,7 @@
 
       .dashboard {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 18px;
       }
@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.33 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, area boundaries, and evidence fusion into saved advisor-ready scouting reports. This V0.34 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -1016,6 +1016,7 @@ rainfall_mm: 0</textarea>
           <div class="dashboard-card"><span>High-risk records</span><strong id="dashHighRisk">0</strong></div>
           <div class="dashboard-card"><span>Latest risk</span><strong id="dashLatestRisk">None</strong></div>
           <div class="dashboard-card"><span>Satellite trend</span><strong id="dashSatelliteTrend">None</strong></div>
+          <div class="dashboard-card"><span>Fusion score</span><strong id="dashFusionScore">0</strong></div>
         </div>
 
         <h3>Risk Trend</h3>
@@ -1059,6 +1060,9 @@ rainfall_mm: 0</textarea>
 
             <h3>Photo Evidence</h3>
             <ul id="outPhotoEvidence"></ul>
+
+            <h3>Evidence Fusion</h3>
+            <ul id="outEvidenceFusion"></ul>
 
             <h3>Sensor Notes</h3>
             <ul id="outSensors"></ul>
@@ -2272,6 +2276,7 @@ rainfall_mm: 0</textarea>
         const latest = records[0];
         const highest = highestRisk(records);
         const satelliteTrend = latestSatelliteTrend(records);
+        const fusionScore = latestFusionScore(records);
         const latestDate = latest ? formatRecordDate(latest, { dateStyle: "medium", timeStyle: "short" }) : "None";
         const latestAction = latest?.report?.match(/## Recommended Next Actions\n([\s\S]*?)\n\n## Do Not Do Yet/)?.[1]?.split("\n")[0]?.replace(/^\d+\.\s*/, "") || "Save an inspection to generate next actions.";
         const history = records.slice(0, 3).map((record) => {
@@ -2286,6 +2291,7 @@ rainfall_mm: 0</textarea>
             <div class="area-detail-item"><span>Highest saved risk</span><strong class="${riskClass(highest)}">${escapeHtml(highest)}</strong></div>
             <div class="area-detail-item"><span>Boundary points</span><strong>${normalizeBoundary(area.boundary).length}</strong></div>
             <div class="area-detail-item"><span>Satellite trend</span><strong>${escapeHtml(satelliteTrend)}</strong></div>
+            <div class="area-detail-item"><span>Fusion score</span><strong>${escapeHtml(fusionScore)}</strong></div>
           </div>
           <p><strong>Next action:</strong> ${escapeHtml(latestAction)}</p>
           <ul>${history || "<li>No saved inspections for this area yet.</li>"}</ul>
@@ -2544,6 +2550,76 @@ rainfall_mm: 0</textarea>
         return record.satelliteNdviTrend || satelliteTrendFromText(record.sensorData);
       }
 
+      function latestFusionScore(records) {
+        const record = records.find((item) => Number.isFinite(Number(item.evidenceFusionScore)));
+        return record ? String(record.evidenceFusionScore) : "0";
+      }
+
+      function evidenceFusion(defaults, risk, selectedArea, records, sensors, observations, photoEvidence) {
+        const text = `${notesEl.value} ${weatherEl.value} ${sensorDataEl.value}`.toLowerCase();
+        const sources = [];
+        let score = riskRank(riskLabel(risk)) * 18;
+
+        const hasPhotoEvidence = photoEvidenceEnabled && loadedPhotos.length > 0;
+        if (hasPhotoEvidence) {
+          const photoStress = photoEvidence.join(" ").toLowerCase();
+          const photoPoints = /yellow|brown|scorch|wilting|spots|lesions|patch/.test(photoStress) ? 18 : 10;
+          score += photoPoints;
+          sources.push(`Photo evidence ${photoPoints >= 18 ? "raised" : "supported"} risk based on visible symptom prompts.`);
+        } else {
+          sources.push("Photo evidence unavailable; confidence is limited.");
+        }
+
+        const weatherFlags = sensors.filter((item) => item.startsWith("forecast_risk_"));
+        if (weatherFlags.length) {
+          score += Math.min(18, weatherFlags.length * 5);
+          sources.push(`${weatherFlags.length} weather forecast risk flag(s) influenced the score.`);
+        } else if (/hot|dry|wind|humid|rain/.test(text)) {
+          score += 7;
+          sources.push("Recent weather notes influenced the score.");
+        }
+
+        const satelliteTrend = satelliteTrendFromText(sensorDataEl.value);
+        const satelliteNdvi = Number(satelliteMetricFromText(sensorDataEl.value, "satellite_ndvi"));
+        if (satelliteTrend !== "Unavailable") {
+          if (satelliteTrend === "Declining") score += 16;
+          else if (satelliteTrend === "Stable") score += 8;
+          else score += 3;
+          sources.push(`Satellite trend is ${satelliteTrend.toLowerCase()}.`);
+        }
+        if (Number.isFinite(satelliteNdvi) && satelliteNdvi < 0.35) {
+          score += 10;
+          sources.push("Low satellite NDVI added risk context.");
+        }
+
+        const hasSensorData = sensors.length && !sensors[0].startsWith("No sensor");
+        if (hasSensorData) {
+          const sensorRisk = /soil_moisture_percent:\s*(1?\d|2[0-4])|very low vegetation|surface_temperature_c:\s*3[5-9]/i.test(sensorDataEl.value);
+          score += sensorRisk ? 12 : 5;
+          sources.push(sensorRisk ? "Sensor values suggest stress conditions." : "Sensor values provide supporting context.");
+        }
+
+        const areaHistory = records.filter((record) => record.areaId === selectedArea.id);
+        const recentHigh = areaHistory.slice(0, 5).filter((record) => record.risk === "High").length;
+        if (recentHigh) {
+          score += Math.min(15, recentHigh * 5);
+          sources.push(`${recentHigh} recent high-risk saved record(s) influenced history risk.`);
+        }
+
+        if (observations.join(" ").toLowerCase().includes("spreading")) {
+          score += 10;
+          sources.push("Observation says the issue may be spreading.");
+        }
+
+        const bounded = Math.max(0, Math.min(100, Math.round(score)));
+        const label = bounded >= 70 ? "High evidence risk" : bounded >= 40 ? "Medium evidence risk" : "Low evidence risk";
+        return {
+          score: bounded,
+          label,
+          sources: sources.slice(0, 7)
+        };
+      }
+
       function riskClass(risk) {
         return `risk-${(risk || "none").toLowerCase()}`;
       }
@@ -2684,12 +2760,14 @@ rainfall_mm: 0</textarea>
         const latest = records[0];
         const highRiskCount = records.filter((record) => record.risk === "High").length;
         const satelliteTrend = latestSatelliteTrend(records);
+        const fusionScore = latestFusionScore(records);
 
         document.getElementById("dashAreas").textContent = String(scope.areas.length);
         document.getElementById("dashRecords").textContent = String(records.length);
         document.getElementById("dashHighRisk").textContent = String(highRiskCount);
         document.getElementById("dashLatestRisk").textContent = latest ? latest.risk : "None";
         document.getElementById("dashSatelliteTrend").textContent = satelliteTrend;
+        document.getElementById("dashFusionScore").textContent = fusionScore;
         renderRiskTrend(records);
 
         areaHealthEl.innerHTML = "";
@@ -2698,6 +2776,7 @@ rainfall_mm: 0</textarea>
           const risk = highestRisk(areaRecords);
           const latestRecord = areaRecords[0];
           const areaSatelliteTrend = latestSatelliteTrend(areaRecords);
+          const areaFusionScore = latestFusionScore(areaRecords);
           const card = document.createElement("button");
           card.type = "button";
           card.className = "health-card";
@@ -2705,6 +2784,7 @@ rainfall_mm: 0</textarea>
             <strong>${area.name}</strong>
             <span>${areaRecords.length} record(s) · highest risk: <b class="${riskClass(risk)}">${risk}</b></span>
             <span>Satellite trend: ${areaSatelliteTrend}</span>
+            <span>Fusion score: ${areaFusionScore}</span>
             <span>${latestRecord ? `Latest: ${formatRecordDate(latestRecord, { dateStyle: "short" })}` : "No saved inspections yet"}</span>
             <div class="risk-bar" aria-hidden="true">
               <div class="risk-segment low${riskRank(risk) >= 1 ? " active" : ""}"></div>
@@ -2812,6 +2892,12 @@ rainfall_mm: 0</textarea>
         const satelliteNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_ndvi");
         const satellitePreviousNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_previous_ndvi");
         const satelliteNdviTrend = satelliteTrendFromText(sensorDataEl.value);
+        const fusion = evidenceFusion(defaults, risk, selectedArea, getRecords(), sensors, observations, photoEvidence);
+        const fusionItems = [
+          `Fusion score: ${fusion.score}/100 (${fusion.label}).`,
+          ...fusion.sources.map((source) => `Influence: ${source}`),
+          "Use the fusion score as prioritization support only; confirm field evidence before treatment, irrigation, or compliance decisions."
+        ];
         const advisor = advisorItems(risk, defaults, observations, sensors);
         const carePlan = carePlanItems(risk);
         const context = [
@@ -2852,6 +2938,7 @@ rainfall_mm: 0</textarea>
         setList("outObservations", observations);
         setList("outPhotoChecklist", photoChecklist);
         setList("outPhotoEvidence", photoEvidence);
+        setList("outEvidenceFusion", fusionItems);
         setList("outSensors", sensors);
         setList("outActions", defaults.actions);
         setList("outDont", dont);
@@ -2881,6 +2968,9 @@ rainfall_mm: 0</textarea>
           "",
           "## Photo Evidence",
           ...photoEvidence.map((item) => `- ${item}`),
+          "",
+          "## Evidence Fusion",
+          ...fusionItems.map((item) => `- ${item}`),
           "",
           "## Sensor Notes",
           ...sensors.map((item) => `- ${item}`),
@@ -2938,6 +3028,9 @@ rainfall_mm: 0</textarea>
           satelliteNdvi,
           satellitePreviousNdvi,
           satelliteNdviTrend,
+          evidenceFusionScore: fusion.score,
+          evidenceFusionLabel: fusion.label,
+          evidenceFusionSources: fusion.sources,
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
           photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role, date: photo.date, areaHint: photo.areaHint })),
