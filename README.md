@@ -40,9 +40,11 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.34 demo supports:
+The V0.35 demo supports:
 
 - Local multi-image upload and preview.
+- One-click AI report generation from photo, location, scenario, map, sensor, and optional notes.
+- Downloadable AI-ready evidence packet for Codex, Claude, GPT, or other agent workflows.
 - Optional local photo evidence extraction for visible symptoms, affected plant parts, image quality, and missing photo requests.
 - Photo evidence is treated as scouting evidence, not a confirmed diagnosis.
 - Evidence Fusion Score combining photo, weather, satellite, history, and sensor signals.
@@ -173,6 +175,7 @@ ai-farm-copilot/
 - V0.32: Satellite NDVI time comparison and trend status.
 - V0.33: Optional photo evidence extraction with missing photo requests.
 - V0.34: Evidence Fusion Score with evidence source influence notes.
+- V0.35: One-click AI report generation and downloadable evidence packet.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

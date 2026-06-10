@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, area boundaries, and evidence fusion into saved advisor-ready scouting reports. This V0.34 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, photo evidence, CSV/JSON readings, satellite NDVI trends, map locations, area boundaries, and evidence fusion into one-click advisor-ready scouting reports. This V0.35 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -947,10 +947,12 @@ rainfall_mm: 0</textarea>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
         <div class="actions">
+          <button id="oneClickReport">One-Click AI Report</button>
           <button id="generate">Generate Report</button>
           <button id="download" class="secondary">Download Report</button>
           <button id="printReport" class="secondary">Print / Save PDF</button>
           <button id="saveReport" class="secondary">Save Record</button>
+          <button id="downloadEvidencePacket" class="secondary">Download Evidence Packet</button>
           <button id="exportHistory" class="warning">Export History</button>
           <button id="clearData" class="danger">Clear Local Data</button>
         </div>
@@ -3075,6 +3077,88 @@ rainfall_mm: 0</textarea>
         window.print();
       }
 
+      function evidencePacket() {
+        const record = buildReport();
+        return {
+          packet_type: "ai_farm_copilot_evidence_packet",
+          version: "V0.35",
+          created_at: new Date().toISOString(),
+          safety_boundary: "Scouting support only. Do not use as confirmed diagnosis or final chemical, irrigation, disease, pest, or compliance instruction.",
+          selected_area: {
+            id: record.areaId,
+            name: record.areaName,
+            boundary: record.areaBoundary,
+            boundary_point_count: record.areaBoundaryPointCount
+          },
+          context: {
+            scenario: record.scenario,
+            crop: record.crop,
+            area: record.area,
+            latitude: record.latitude,
+            longitude: record.longitude,
+            map_layer: record.mapLayer,
+            weather: record.weather,
+            irrigation: record.irrigation,
+            soil: record.soil,
+            treatment: record.treatment,
+            observation: record.observation
+          },
+          evidence: {
+            photos: record.photoRoles,
+            photo_evidence: record.photoEvidence,
+            sensor_data: record.sensorData,
+            satellite_ndvi: record.satelliteNdvi,
+            satellite_previous_ndvi: record.satellitePreviousNdvi,
+            satellite_trend: record.satelliteNdviTrend,
+            fusion_score: record.evidenceFusionScore,
+            fusion_label: record.evidenceFusionLabel,
+            fusion_sources: record.evidenceFusionSources
+          },
+          requested_output: [
+            "Brief scouting summary",
+            "Observed evidence vs assumptions",
+            "Most likely causes with confidence language",
+            "Immediate checks to perform",
+            "7-day care plan",
+            "When to ask a qualified local professional"
+          ],
+          report_markdown: record.report,
+          advisor_prompt: record.advisorPrompt
+        };
+      }
+
+      function downloadEvidencePacket() {
+        const packet = evidencePacket();
+        const blob = new Blob([JSON.stringify(packet, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const stamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `ai-farm-copilot-evidence-packet-${stamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showStatus("Evidence packet downloaded.");
+      }
+
+      function oneClickAiReport() {
+        const defaults = scenarioDefaults[scenarioEl.value];
+        if (!notesEl.value.trim()) {
+          notesEl.value = loadedPhotos.length
+            ? `One-click report generated from ${loadedPhotos.length} uploaded photo(s), current location, scenario defaults, and available sensor/map evidence.`
+            : "One-click report generated from scenario defaults, current location, and available sensor/map evidence.";
+        }
+        if (loadedPhotos.length) photoEvidenceEnabled = true;
+        if (normalizeBoundary(getSelectedArea().boundary).length >= 3 && !sensorDataEl.value.toLowerCase().includes("satellite_ndvi")) {
+          importSatelliteNdvi();
+        }
+        const report = buildReport();
+        latestAdvisorPrompt = buildAdvisorPrompt(scenarioEl.value, report.report);
+        document.getElementById("outAdvisorPrompt").value = latestAdvisorPrompt;
+        showStatus(`One-click AI report ready for ${defaults.label}.`);
+      }
+
       async function copyAdvisorPrompt() {
         if (!latestAdvisorPrompt) buildReport();
         const promptEl = document.getElementById("outAdvisorPrompt");
@@ -3303,12 +3387,14 @@ rainfall_mm: 0</textarea>
       document.getElementById("sampleNdvi").addEventListener("click", useSampleNdvi);
       document.getElementById("satelliteNdvi").addEventListener("click", importSatelliteNdvi);
       document.getElementById("analyzePhotos").addEventListener("click", analyzePhotoEvidence);
+      document.getElementById("oneClickReport").addEventListener("click", oneClickAiReport);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("printReport").addEventListener("click", printReport);
       document.getElementById("copyPrompt").addEventListener("click", copyAdvisorPrompt);
       document.getElementById("downloadPrompt").addEventListener("click", downloadAdvisorPrompt);
       document.getElementById("saveReport").addEventListener("click", saveRecord);
+      document.getElementById("downloadEvidencePacket").addEventListener("click", downloadEvidencePacket);
       document.getElementById("exportHistory").addEventListener("click", exportHistory);
       document.getElementById("clearData").addEventListener("click", clearLocalData);
       dashboardAreaFilterEl.addEventListener("change", renderDashboard);

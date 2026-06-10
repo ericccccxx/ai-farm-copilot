@@ -251,9 +251,9 @@ Success metric:
 
 ## V0.35: One-Click AI Report
 
-- Let users generate a full inspection report from photo, location, and scenario with minimal manual input.
-- Make manual notes optional context instead of required context.
-- Produce an AI-ready evidence packet for Codex, Claude, or GPT.
+- Let users generate a full inspection report from photo, location, and scenario with minimal manual input. Done in V0.35.
+- Make manual notes optional context instead of required context. Done in V0.35.
+- Produce an AI-ready evidence packet for Codex, Claude, or GPT. Done in V0.35.
 
 ## V0.36: Pilot Mode
 
