@@ -227,9 +227,9 @@ Success metric:
 
 ## V0.31: Satellite NDVI Data
 
-- Connect a satellite data source for NDVI when an area boundary is available.
-- Add cloud-aware recent image selection.
-- Add satellite vegetation notes to the report.
+- Connect a satellite data source for NDVI when an area boundary is available. Done in V0.31.
+- Add cloud-aware recent image selection. Done in V0.31.
+- Add satellite vegetation notes to the report. Done in V0.31.
 
 ## V0.32: Satellite Time Comparison
 

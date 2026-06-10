@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.30 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, satellite NDVI, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.31 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -939,6 +939,7 @@ rainfall_mm: 0</textarea>
         <div class="actions">
           <button id="calculateNdvi" class="secondary" type="button">Calculate NDVI</button>
           <button id="sampleNdvi" class="secondary" type="button">Use Sample NDVI</button>
+          <button id="satelliteNdvi" class="secondary" type="button">Import Satellite NDVI</button>
         </div>
 
         <label for="notes">Observation</label>
@@ -1372,7 +1373,7 @@ rainfall_mm: 0</textarea>
           .split(/\n|,/)
           .map((item) => item.trim())
           .filter(Boolean)
-          .slice(0, 8);
+          .slice(0, 16);
 
         return rows.length ? rows : ["No sensor readings provided."];
       }
@@ -1381,6 +1382,12 @@ rainfall_mm: 0</textarea>
         return sensorRows
           .filter((item) => item.startsWith("forecast_risk_"))
           .map((item) => `Forecast ${item.replace(/_/g, " ")}`);
+      }
+
+      function satelliteContextItems(sensorRows) {
+        return sensorRows
+          .filter((item) => item.startsWith("satellite_"))
+          .map((item) => `Satellite ${item.replace(/_/g, " ")}`);
       }
 
       function parseCsv(text) {
@@ -1562,6 +1569,67 @@ rainfall_mm: 0</textarea>
         nirValueEl.value = "0.62";
         redValueEl.value = "0.28";
         calculateNdvi();
+      }
+
+      function stableHash(value) {
+        return String(value).split("").reduce((hash, char) => {
+          return (hash * 31 + char.charCodeAt(0)) % 9973;
+        }, 17);
+      }
+
+      function satelliteNdviStatus(ndvi) {
+        if (ndvi >= 0.62) return "High satellite vegetation vigor";
+        if (ndvi >= 0.42) return "Moderate satellite vegetation vigor";
+        if (ndvi >= 0.25) return "Low satellite vegetation vigor";
+        return "Very low satellite vegetation signal";
+      }
+
+      function satelliteImageCandidates(area) {
+        const boundary = normalizeBoundary(area.boundary);
+        const seed = stableHash(`${area.id}-${boundary.length}-${area.latitude}-${area.longitude}`);
+        return [0, 2, 4, 7, 10].map((daysAgo, index) => {
+          const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+          const cloudCover = (seed + index * 23 + boundary.length * 7) % 78;
+          const baseNdvi = 0.28 + ((seed + index * 11) % 44) / 100;
+          const cloudPenalty = cloudCover > 45 ? 0.08 : cloudCover > 30 ? 0.03 : 0;
+          const ndvi = Math.max(0.12, Math.min(0.82, baseNdvi - cloudPenalty));
+          return {
+            date: date.toISOString().slice(0, 10),
+            cloudCover,
+            ndvi: Math.round(ndvi * 1000) / 1000
+          };
+        });
+      }
+
+      function importSatelliteNdvi() {
+        const area = getSelectedArea();
+        const boundary = normalizeBoundary(area.boundary);
+        if (boundary.length < 3) {
+          showStatus("Add at least 3 boundary points before importing satellite NDVI.");
+          return;
+        }
+
+        const candidates = satelliteImageCandidates(area);
+        const clearCandidates = candidates.filter((candidate) => candidate.cloudCover <= 35);
+        const selected = (clearCandidates.length ? clearCandidates : candidates)
+          .sort((a, b) => a.cloudCover - b.cloudCover || new Date(b.date) - new Date(a.date))[0];
+        const status = satelliteNdviStatus(selected.ndvi);
+        const sourceNote = clearCandidates.length ? "selected lowest-cloud recent image" : "fallback selected despite cloud cover";
+
+        sensorDataEl.value = [
+          sensorDataEl.value.trim(),
+          "satellite_source: Local demo satellite adapter",
+          `satellite_area_id: ${area.id}`,
+          `satellite_boundary_points: ${boundary.length}`,
+          `satellite_image_date: ${selected.date}`,
+          `satellite_cloud_cover_percent: ${selected.cloudCover}`,
+          `satellite_ndvi: ${selected.ndvi}`,
+          `satellite_ndvi_status: ${status}`,
+          `satellite_selection_note: ${sourceNote}`
+        ].filter(Boolean).join("\n");
+
+        showStatus(`Satellite NDVI imported: ${selected.ndvi} with ${selected.cloudCover}% cloud cover.`);
+        buildReport();
       }
 
       function photoChecklistItems() {
@@ -2555,6 +2623,7 @@ rainfall_mm: 0</textarea>
       function advisorItems(risk, defaults, observations, sensors) {
         const hasPhotos = loadedPhotos.length > 0;
         const hasSensorData = sensors.length && !sensors[0].startsWith("No sensor");
+        const hasSatellite = sensorDataEl.value.toLowerCase().includes("satellite_ndvi");
         const advisor = [
           `Likely issue posture: ${riskLabel(risk)} risk ${defaults.label.toLowerCase()} scouting case; treat this as decision support, not a confirmed diagnosis.`,
           `Missing evidence: ${hasPhotos ? "Add a healthy comparison and close-up if they are missing." : "Add overview, affected, healthy comparison, and close-up photos."}`,
@@ -2565,6 +2634,9 @@ rainfall_mm: 0</textarea>
 
         if (sensorDataEl.value.toLowerCase().includes("ndvi")) {
           advisor.push("Vegetation index note: compare NDVI against a healthy control area before using it as a treatment signal.");
+        }
+        if (hasSatellite) {
+          advisor.push("Satellite note: treat satellite NDVI as area-level vegetation context; confirm with close-up photos and field checks before narrowing causes.");
         }
         if (observations.join(" ").toLowerCase().includes("yellow")) {
           advisor.push("Yellowing note: separate older-leaf yellowing from new-growth yellowing before narrowing causes.");
@@ -2609,6 +2681,7 @@ rainfall_mm: 0</textarea>
         const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
         const forecastContext = forecastContextItems(sensors);
+        const satelliteContext = satelliteContextItems(sensors);
         const selectedBoundary = normalizeBoundary(selectedArea.boundary);
         const advisor = advisorItems(risk, defaults, observations, sensors);
         const carePlan = carePlanItems(risk);
@@ -2628,6 +2701,7 @@ rainfall_mm: 0</textarea>
           `Soil moisture: ${soilEl.value || "Not provided"}`,
           `Recent treatment: ${treatmentEl.value || "Not provided"}`,
           ...forecastContext,
+          ...satelliteContext,
           `Photos loaded: ${loadedPhotos.length}`,
           `Photo roles: ${loadedPhotos.length ? loadedPhotos.map((photo) => photo.role).join(", ") : "Not provided"}`,
           ...batchSummaryItems().map((item) => `Photo batch: ${item}`)
@@ -2994,6 +3068,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("sampleJson").addEventListener("click", useSampleJson);
       document.getElementById("calculateNdvi").addEventListener("click", calculateNdvi);
       document.getElementById("sampleNdvi").addEventListener("click", useSampleNdvi);
+      document.getElementById("satelliteNdvi").addEventListener("click", importSatelliteNdvi);
       document.getElementById("generate").addEventListener("click", buildReport);
       document.getElementById("download").addEventListener("click", downloadReport);
       document.getElementById("printReport").addEventListener("click", printReport);
