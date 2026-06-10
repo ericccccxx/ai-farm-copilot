@@ -203,9 +203,9 @@ Success metric:
 
 ## V0.27: Weather Forecast Risk
 
-- Extend Open-Meteo import from current weather to 7-day forecast.
-- Add weather risk notes for heat, wind, high humidity, no rain, and post-rain disease pressure.
-- Add forecast risk warnings to the report and dashboard.
+- Extend Open-Meteo import from current weather to 7-day forecast. Done in V0.27.
+- Add weather risk notes for heat, wind, high humidity, no rain, and post-rain disease pressure. Done in V0.27.
+- Add forecast risk warnings to the report context and sensor notes. Done in V0.27.
 
 ## V0.28: Map Location View
 

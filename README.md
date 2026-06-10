@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.26 demo supports:
+The V0.27 demo supports:
 
 - Local multi-image upload and preview.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
@@ -69,6 +69,7 @@ The V0.26 demo supports:
 - Open-Meteo weather import using latitude and longitude.
 - Browser geolocation with Use My Location and manual coordinate fallback.
 - Local timezone and local inspection time in reports and saved records.
+- 7-day weather forecast risk notes for heat, dry conditions, wind, humidity, and post-rain disease pressure.
 - Sample weather fallback for offline demos.
 - Scenario-specific defaults for vineyard, orchard, golf turf, and home garden.
 - Sensor and weather reading notes.
@@ -150,6 +151,7 @@ ai-farm-copilot/
 - V0.24: Dashboard and saved record date range filters.
 - V0.25: Browser geolocation for automatic coordinates.
 - V0.26: Local timezone and inspection time.
+- V0.27: 7-day weather forecast risk notes.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

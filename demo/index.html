@@ -681,7 +681,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.26 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.27 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -1245,6 +1245,12 @@ rainfall_mm: 0</textarea>
         return rows.length ? rows : ["No sensor readings provided."];
       }
 
+      function forecastContextItems(sensorRows) {
+        return sensorRows
+          .filter((item) => item.startsWith("forecast_risk_"))
+          .map((item) => `Forecast ${item.replace(/_/g, " ")}`);
+      }
+
       function parseCsv(text) {
         const rows = text
           .trim()
@@ -1570,6 +1576,7 @@ rainfall_mm: 0</textarea>
 
       function applyWeatherReading(reading, source) {
         const timezone = localTimezone();
+        const forecastNotes = reading.forecastNotes || [];
         const weatherSummary = [
           `${source}: ${reading.temperature_c}C`,
           `${reading.relative_humidity_percent}% humidity`,
@@ -1586,9 +1593,34 @@ rainfall_mm: 0</textarea>
           `wind_speed_kmh: ${reading.wind_speed_kmh}`,
           `weather_time: ${reading.time}`,
           `local_timezone: ${timezone}`,
-          `local_weather_import_time: ${localInspectionTime()}`
+          `local_weather_import_time: ${localInspectionTime()}`,
+          ...forecastNotes
         ].join("\n");
         buildReport();
+      }
+
+      function forecastRiskNotes(daily) {
+        if (!daily?.time?.length) return ["forecast_risk: no 7-day forecast available"];
+        const maxTemp = Math.max(...(daily.temperature_2m_max || []).map(Number).filter(Number.isFinite));
+        const totalRain = (daily.precipitation_sum || []).map(Number).filter(Number.isFinite).reduce((sum, value) => sum + value, 0);
+        const maxWind = Math.max(...(daily.wind_speed_10m_max || []).map(Number).filter(Number.isFinite));
+        const humidDays = (daily.relative_humidity_2m_mean || []).map(Number).filter((value) => Number.isFinite(value) && value >= 80).length;
+        const rainyHumidDays = (daily.precipitation_sum || []).filter((rain, index) => Number(rain) >= 2 && Number(daily.relative_humidity_2m_mean?.[index]) >= 75).length;
+        const notes = [
+          `forecast_days: ${daily.time.length}`,
+          `forecast_max_temperature_c: ${Number.isFinite(maxTemp) ? maxTemp : "unknown"}`,
+          `forecast_total_rainfall_mm: ${totalRain.toFixed(1)}`,
+          `forecast_max_wind_kmh: ${Number.isFinite(maxWind) ? maxWind : "unknown"}`
+        ];
+
+        if (maxTemp >= 35) notes.push("forecast_risk_heat: high heat stress risk in the next 7 days");
+        else if (maxTemp >= 30) notes.push("forecast_risk_heat: moderate heat stress risk in the next 7 days");
+        if (totalRain < 2) notes.push("forecast_risk_dry: low rainfall may increase irrigation or drought stress");
+        if (maxWind >= 35) notes.push("forecast_risk_wind: high wind may increase drying and drift risk");
+        if (humidDays >= 3) notes.push("forecast_risk_humidity: repeated high humidity may increase disease scouting priority");
+        if (rainyHumidDays >= 1) notes.push("forecast_risk_post_rain: rain plus humidity may increase disease pressure after wet periods");
+        if (notes.length === 4) notes.push("forecast_risk_overall: no major weather risk flags in the next 7 days");
+        return notes;
       }
 
       function useSampleWeather() {
@@ -1597,7 +1629,15 @@ rainfall_mm: 0</textarea>
           relative_humidity_percent: 41,
           precipitation_mm: 0,
           wind_speed_kmh: 18,
-          time: new Date().toISOString()
+          time: new Date().toISOString(),
+          forecastNotes: [
+            "forecast_days: 7",
+            "forecast_max_temperature_c: 36",
+            "forecast_total_rainfall_mm: 0.0",
+            "forecast_max_wind_kmh: 28",
+            "forecast_risk_heat: high heat stress risk in the next 7 days",
+            "forecast_risk_dry: low rainfall may increase irrigation or drought stress"
+          ]
         }, "Sample weather");
         showStatus("Sample weather added to the report.");
       }
@@ -1652,6 +1692,8 @@ rainfall_mm: 0</textarea>
             latitude: String(latitude),
             longitude: String(longitude),
             current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
+            daily: "temperature_2m_max,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_mean",
+            forecast_days: "7",
             timezone: localTimezone()
           });
           const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
@@ -1663,7 +1705,8 @@ rainfall_mm: 0</textarea>
             relative_humidity_percent: current.relative_humidity_2m,
             precipitation_mm: current.precipitation,
             wind_speed_kmh: current.wind_speed_10m,
-            time: current.time
+            time: current.time,
+            forecastNotes: forecastRiskNotes(data.daily)
           }, "Open-Meteo");
           showStatus("Weather imported.");
         } catch (error) {
@@ -2066,6 +2109,7 @@ rainfall_mm: 0</textarea>
         const observations = sentenceList(notesEl.value || "No observation provided.");
         const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
+        const forecastContext = forecastContextItems(sensors);
         const advisor = advisorItems(risk, defaults, observations, sensors);
         const carePlan = carePlanItems(risk);
         const context = [
@@ -2081,6 +2125,7 @@ rainfall_mm: 0</textarea>
           `Irrigation / watering: ${irrigationEl.value || "Not provided"}`,
           `Soil moisture: ${soilEl.value || "Not provided"}`,
           `Recent treatment: ${treatmentEl.value || "Not provided"}`,
+          ...forecastContext,
           `Photos loaded: ${loadedPhotos.length}`,
           `Photo roles: ${loadedPhotos.length ? loadedPhotos.map((photo) => photo.role).join(", ") : "Not provided"}`,
           ...batchSummaryItems().map((item) => `Photo batch: ${item}`)
