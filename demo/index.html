@@ -542,6 +542,128 @@
         margin-top: 5px;
       }
 
+      .location-map {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 22px;
+        background: #fbfcfa;
+      }
+
+      .map-meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .map-meta div {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+      }
+
+      .map-meta span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .map-meta strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 13px;
+        line-height: 1.25;
+      }
+
+      .map-canvas {
+        width: 100%;
+        min-height: 300px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #eef5ed;
+      }
+
+      .map-canvas.satellite {
+        background: #1f2b22;
+      }
+
+      .map-canvas svg {
+        display: block;
+        width: 100%;
+        height: 300px;
+      }
+
+      .map-marker {
+        cursor: pointer;
+      }
+
+      .map-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .map-actions button {
+        min-height: 38px;
+        padding: 9px 10px;
+        font-size: 12px;
+      }
+
+      .map-layer-control {
+        margin-top: 12px;
+      }
+
+      .map-layer-control label {
+        margin-top: 0;
+      }
+
+      .map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .map-legend span {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .map-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--canopy);
+      }
+
+      .map-dot.current {
+        background: var(--wheat);
+      }
+
+      .map-dot.record-low {
+        background: var(--ok);
+      }
+
+      .map-dot.record-medium {
+        background: var(--warning);
+      }
+
+      .map-dot.record-high {
+        background: var(--danger);
+      }
+
+      .map-dot.boundary {
+        border: 2px solid var(--canopy);
+        background: rgba(31, 107, 74, 0.16);
+      }
+
       .status-line {
         min-height: 18px;
         margin-top: 10px;
@@ -593,6 +715,7 @@
         .meta,
         .dashboard,
         .trend-labels,
+        .map-meta,
         .area-detail-grid,
         .area-health,
         .causes {
@@ -607,11 +730,13 @@
 
         .grid-two,
         .actions,
+        .map-actions,
         .dashboard-filter,
         .saved-controls,
         .meta,
         .dashboard,
         .trend-labels,
+        .map-meta,
         .area-detail-grid,
         .area-health,
         .causes {
@@ -681,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, and sensor notes into saved advisor-ready scouting reports. This V0.27 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, NDVI, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.30 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -716,6 +841,7 @@
         <div class="actions">
           <button id="updateArea" class="secondary" type="button">Update Current Area</button>
           <button id="deleteArea" class="danger" type="button">Delete Current Area</button>
+          <button id="saveAreaLocation" class="secondary" type="button">Use Current Coordinates for Area</button>
         </div>
 
         <div class="grid-two">
@@ -898,6 +1024,9 @@ rainfall_mm: 0</textarea>
         <h3>Area Detail</h3>
         <div id="areaDetail" class="area-detail"></div>
 
+        <h3>Location Map</h3>
+        <div id="locationMap" class="location-map"></div>
+
         <h2>Inspection Report</h2>
 
         <div class="meta">
@@ -990,6 +1119,7 @@ rainfall_mm: 0</textarea>
       const areaListEl = document.getElementById("areaList");
       const areaHealthEl = document.getElementById("areaHealth");
       const areaDetailEl = document.getElementById("areaDetail");
+      const locationMapEl = document.getElementById("locationMap");
       const riskTrendEl = document.getElementById("riskTrend");
       const dashboardAreaFilterEl = document.getElementById("dashboardAreaFilter");
       const dashboardRiskFilterEl = document.getElementById("dashboardRiskFilter");
@@ -1004,8 +1134,10 @@ rainfall_mm: 0</textarea>
       const storageKey = "aiFarmCopilotRecords";
       const areasKey = "aiFarmCopilotAreas";
       const selectedAreaKey = "aiFarmCopilotSelectedArea";
+      const mapLayerKey = "aiFarmCopilotMapLayer";
       let loadedPhotos = [];
       let selectedAreaId = localStorage.getItem(selectedAreaKey) || "vineyard-block-a";
+      let selectedMapLayer = localStorage.getItem(mapLayerKey) || "field";
       const photoRoles = ["Overview", "Affected area", "Healthy comparison", "Close-up", "Drone / overhead", "Sensor / equipment"];
       const roleMatchers = [
         [/affected|stress|disease|problem|issue/i, "Affected area"],
@@ -1519,17 +1651,27 @@ rainfall_mm: 0</textarea>
 
       function defaultAreas() {
         return [
-          { id: "vineyard-block-a", name: "Vineyard Block A", scenario: "vineyard", crop: "Cabernet Sauvignon", size: "1.2 hectares" },
-          { id: "orchard-north", name: "North Orchard", scenario: "orchard", crop: "Apple trees", size: "0.8 hectares" },
-          { id: "golf-zone-4", name: "Golf Sprinkler Zone 4", scenario: "golf", crop: "Fairway turf", size: "Zone 4" },
-          { id: "garden-bed-2", name: "Garden Bed 2", scenario: "garden", crop: "Tomato plant", size: "Raised bed" }
+          { id: "vineyard-block-a", name: "Vineyard Block A", scenario: "vineyard", crop: "Cabernet Sauvignon", size: "1.2 hectares", latitude: "38.2975", longitude: "-122.2869" },
+          { id: "orchard-north", name: "North Orchard", scenario: "orchard", crop: "Apple trees", size: "0.8 hectares", latitude: "47.6062", longitude: "-122.3321" },
+          { id: "golf-zone-4", name: "Golf Sprinkler Zone 4", scenario: "golf", crop: "Fairway turf", size: "Zone 4", latitude: "33.4484", longitude: "-112.0740" },
+          { id: "garden-bed-2", name: "Garden Bed 2", scenario: "garden", crop: "Tomato plant", size: "Raised bed", latitude: "37.7749", longitude: "-122.4194" }
         ];
+      }
+
+      function normalizeArea(area) {
+        const defaults = scenarioDefaults[area.scenario] || scenarioDefaults.vineyard;
+        return {
+          ...area,
+          latitude: area.latitude || defaults.latitude,
+          longitude: area.longitude || defaults.longitude,
+          boundary: normalizeBoundary(area.boundary)
+        };
       }
 
       function getAreas() {
         try {
           const stored = JSON.parse(localStorage.getItem(areasKey) || "[]");
-          return stored.length ? stored : defaultAreas();
+          return (stored.length ? stored : defaultAreas()).map(normalizeArea);
         } catch (error) {
           return defaultAreas();
         }
@@ -1546,6 +1688,57 @@ rainfall_mm: 0</textarea>
 
       function slugify(value) {
         return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `area-${Date.now()}`;
+      }
+
+      function validCoordinate(latitude, longitude) {
+        const lat = Number(latitude);
+        const lon = Number(longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+        return { latitude: lat, longitude: lon };
+      }
+
+      function normalizeBoundary(boundary) {
+        if (!Array.isArray(boundary)) return [];
+        return boundary
+          .map((point) => validCoordinate(point.latitude, point.longitude))
+          .filter(Boolean)
+          .map((point) => ({
+            latitude: point.latitude.toFixed(5),
+            longitude: point.longitude.toFixed(5)
+          }))
+          .slice(0, 12);
+      }
+
+      function currentCoordinates() {
+        return validCoordinate(latitudeEl.value, longitudeEl.value);
+      }
+
+      function areaCoordinates(area) {
+        return validCoordinate(area.latitude, area.longitude);
+      }
+
+      function recordCoordinates(record) {
+        return validCoordinate(record.latitude, record.longitude);
+      }
+
+      function formatCoordinate(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toFixed(5) : "Not set";
+      }
+
+      function sampleBoundaryForArea(area) {
+        const center = areaCoordinates(area) || currentCoordinates();
+        if (!center) return [];
+        const scenarioScale = area.scenario === "garden" ? 0.35 : area.scenario === "golf" ? 0.9 : 0.65;
+        const latOffset = 0.002 * scenarioScale;
+        const lonOffset = 0.0028 * scenarioScale;
+        return [
+          { latitude: (center.latitude + latOffset).toFixed(5), longitude: (center.longitude - lonOffset).toFixed(5) },
+          { latitude: (center.latitude + latOffset * 0.75).toFixed(5), longitude: (center.longitude + lonOffset).toFixed(5) },
+          { latitude: (center.latitude - latOffset).toFixed(5), longitude: (center.longitude + lonOffset * 0.8).toFixed(5) },
+          { latitude: (center.latitude - latOffset * 0.85).toFixed(5), longitude: (center.longitude - lonOffset * 0.9).toFixed(5) }
+        ];
       }
 
       function showStatus(message) {
@@ -1668,6 +1861,7 @@ rainfall_mm: 0</textarea>
             `gps_time: ${new Date(position.timestamp).toISOString()}`
           ].filter(Boolean).join("\n");
           buildReport();
+          renderLocationMap();
           showStatus(`Location added, accuracy about ${Math.round(accuracy)} m.`);
         }, (error) => {
           showStatus(locationErrorMessage(error));
@@ -1725,10 +1919,13 @@ rainfall_mm: 0</textarea>
           applyScenarioDefaults();
           cropEl.value = area.crop;
           areaEl.value = area.size;
+          latitudeEl.value = area.latitude || latitudeEl.value;
+          longitudeEl.value = area.longitude || longitudeEl.value;
         }
         renderManagedAreas();
         renderDashboard();
         updateAreaSummary();
+        renderLocationMap();
         buildReport();
       }
 
@@ -1746,7 +1943,9 @@ rainfall_mm: 0</textarea>
           name,
           scenario: scenarioEl.value,
           crop: cropEl.value || defaults.crop,
-          size: newAreaSizeEl.value.trim() || areaEl.value || defaults.area
+          size: newAreaSizeEl.value.trim() || areaEl.value || defaults.area,
+          latitude: latitudeEl.value || defaults.latitude,
+          longitude: longitudeEl.value || defaults.longitude
         };
         areas.unshift(area);
         setAreas(areas);
@@ -1765,11 +1964,79 @@ rainfall_mm: 0</textarea>
         area.size = newAreaSizeEl.value.trim() || areaEl.value || area.size;
         area.scenario = scenarioEl.value;
         area.crop = cropEl.value || defaults.crop;
+        area.latitude = latitudeEl.value || area.latitude || defaults.latitude;
+        area.longitude = longitudeEl.value || area.longitude || defaults.longitude;
         setAreas(areas);
         renderManagedAreas();
         renderDashboard();
         updateAreaSummary();
+        renderLocationMap();
         showStatus("Current managed area updated.");
+      }
+
+      function saveCurrentCoordinatesForArea() {
+        const coordinates = currentCoordinates();
+        if (!coordinates) {
+          showStatus("Enter valid latitude and longitude before saving area coordinates.");
+          return;
+        }
+
+        const areas = getAreas();
+        const area = areas.find((item) => item.id === selectedAreaId);
+        if (!area) return;
+        area.latitude = coordinates.latitude.toFixed(5);
+        area.longitude = coordinates.longitude.toFixed(5);
+        setAreas(areas);
+        renderManagedAreas();
+        renderLocationMap();
+        buildReport();
+        showStatus(`Coordinates saved for ${area.name}.`);
+      }
+
+      function updateCurrentAreaBoundary(nextBoundary, message) {
+        const areas = getAreas();
+        const area = areas.find((item) => item.id === selectedAreaId);
+        if (!area) return;
+        area.boundary = normalizeBoundary(nextBoundary);
+        setAreas(areas);
+        renderManagedAreas();
+        updateAreaSummary();
+        renderLocationMap();
+        buildReport();
+        showStatus(message);
+      }
+
+      function addBoundaryPointForArea() {
+        const coordinates = currentCoordinates();
+        if (!coordinates) {
+          showStatus("Enter valid latitude and longitude before adding a boundary point.");
+          return;
+        }
+
+        const area = getSelectedArea();
+        const boundary = [
+          ...(area.boundary || []),
+          {
+            latitude: coordinates.latitude.toFixed(5),
+            longitude: coordinates.longitude.toFixed(5)
+          }
+        ].slice(-12);
+        updateCurrentAreaBoundary(boundary, `Boundary point ${boundary.length} saved for ${area.name}.`);
+      }
+
+      function useSampleBoundaryForArea() {
+        const area = getSelectedArea();
+        const boundary = sampleBoundaryForArea(area);
+        if (!boundary.length) {
+          showStatus("Set coordinates before creating a sample boundary.");
+          return;
+        }
+        updateCurrentAreaBoundary(boundary, `Sample boundary saved for ${area.name}.`);
+      }
+
+      function clearBoundaryForArea() {
+        const area = getSelectedArea();
+        updateCurrentAreaBoundary([], `Boundary cleared for ${area.name}.`);
       }
 
       function deleteCurrentArea() {
@@ -1799,7 +2066,8 @@ rainfall_mm: 0</textarea>
           const button = document.createElement("button");
           button.type = "button";
           button.className = `area-item${area.id === selectedAreaId ? " active" : ""}`;
-          button.innerHTML = `<strong>${area.name}</strong><span>${scenarioDefaults[area.scenario].label} · ${area.crop} · ${count} record(s)</span>`;
+          const boundaryCount = normalizeBoundary(area.boundary).length;
+          button.innerHTML = `<strong>${area.name}</strong><span>${scenarioDefaults[area.scenario].label} · ${area.crop} · ${count} record(s) · ${boundaryCount} boundary point(s)</span>`;
           button.addEventListener("click", () => selectManagedArea(area.id));
           areaListEl.appendChild(button);
         });
@@ -1840,10 +2108,241 @@ rainfall_mm: 0</textarea>
             <div class="area-detail-item"><span>Selected area</span><strong>${escapeHtml(area.name)}</strong></div>
             <div class="area-detail-item"><span>Latest inspection</span><strong>${latestDate}</strong></div>
             <div class="area-detail-item"><span>Highest saved risk</span><strong class="${riskClass(highest)}">${escapeHtml(highest)}</strong></div>
+            <div class="area-detail-item"><span>Boundary points</span><strong>${normalizeBoundary(area.boundary).length}</strong></div>
           </div>
           <p><strong>Next action:</strong> ${escapeHtml(latestAction)}</p>
           <ul>${history || "<li>No saved inspections for this area yet.</li>"}</ul>
         `;
+      }
+
+      function renderLocationMap() {
+        const areas = getAreas();
+        const records = getRecords();
+        const selectedArea = getSelectedArea();
+        const current = currentCoordinates();
+        const isSatellite = selectedMapLayer === "satellite";
+        const areaPoints = areas.map((area) => ({ type: "area", area, coordinates: areaCoordinates(area) })).filter((point) => point.coordinates);
+        const recordPoints = records.map((record) => ({ type: "record", record, coordinates: recordCoordinates(record) })).filter((point) => point.coordinates);
+        const boundaryPoints = areas.flatMap((area) => normalizeBoundary(area.boundary).map((point) => ({ type: "boundary", area, coordinates: validCoordinate(point.latitude, point.longitude) }))).filter((point) => point.coordinates);
+        const allPoints = [
+          ...(current ? [{ type: "current", coordinates: current }] : []),
+          ...areaPoints,
+          ...recordPoints,
+          ...boundaryPoints
+        ];
+
+        if (!current && !areaPoints.length && !recordPoints.length && !boundaryPoints.length) {
+          locationMapEl.innerHTML = `
+            <div class="map-meta">
+              <div><span>Map center</span><strong>Not set</strong></div>
+              <div><span>Managed areas</span><strong>0 with coordinates</strong></div>
+              <div><span>Inspection points</span><strong>0 with coordinates</strong></div>
+              <div><span>Boundary points</span><strong>0 saved</strong></div>
+            </div>
+            <div class="map-canvas">
+              <div class="status-line">Use My Location or enter latitude and longitude to show the local scouting map.</div>
+            </div>
+            ${mapLayerControl()}
+            <div class="map-actions">
+              <button id="addBoundaryPoint" class="secondary" type="button">Add Boundary Point</button>
+              <button id="sampleBoundary" class="secondary" type="button">Use Sample Boundary</button>
+              <button id="clearBoundary" class="danger" type="button">Clear Boundary</button>
+            </div>
+          `;
+          bindMapControls();
+          return;
+        }
+
+        const center = current || areaCoordinates(selectedArea) || allPoints[0].coordinates;
+        const latitudes = allPoints.map((point) => point.coordinates.latitude);
+        const longitudes = allPoints.map((point) => point.coordinates.longitude);
+        const latMin = Math.min(...latitudes, center.latitude);
+        const latMax = Math.max(...latitudes, center.latitude);
+        const lonMin = Math.min(...longitudes, center.longitude);
+        const lonMax = Math.max(...longitudes, center.longitude);
+        const latSpan = Math.max(latMax - latMin, 0.02);
+        const lonSpan = Math.max(lonMax - lonMin, 0.02);
+        const bounds = {
+          latMin: (latMin + latMax) / 2 - latSpan * 0.65,
+          latMax: (latMin + latMax) / 2 + latSpan * 0.65,
+          lonMin: (lonMin + lonMax) / 2 - lonSpan * 0.65,
+          lonMax: (lonMin + lonMax) / 2 + lonSpan * 0.65
+        };
+
+        function project(coordinates) {
+          const x = 36 + ((coordinates.longitude - bounds.lonMin) / (bounds.lonMax - bounds.lonMin)) * 568;
+          const y = 264 - ((coordinates.latitude - bounds.latMin) / (bounds.latMax - bounds.latMin)) * 228;
+          return {
+            x: Math.min(618, Math.max(22, x)),
+            y: Math.min(278, Math.max(22, y))
+          };
+        }
+
+        function basemapSvg() {
+          if (isSatellite) {
+            return `
+              <rect width="640" height="300" fill="#1f2b22" />
+              <path d="M0 232 C92 201 160 238 248 212 C366 176 466 226 640 178 L640 300 L0 300 Z" fill="#334b2f" />
+              <path d="M0 70 C130 35 220 92 337 57 C451 23 540 75 640 43" fill="none" stroke="#5d6d46" stroke-width="24" opacity="0.65" />
+              <path d="M24 24 L178 8 L210 118 L58 139 Z" fill="#425c33" stroke="#708452" stroke-width="2" opacity="0.88" />
+              <path d="M218 18 L392 38 L370 139 L210 118 Z" fill="#2f452c" stroke="#61794f" stroke-width="2" opacity="0.9" />
+              <path d="M414 34 L620 26 L590 130 L370 139 Z" fill="#526338" stroke="#788a58" stroke-width="2" opacity="0.82" />
+              <path d="M58 152 L214 128 L268 276 L84 282 Z" fill="#2b3f29" stroke="#657a4e" stroke-width="2" opacity="0.9" />
+              <path d="M226 132 L410 150 L386 286 L268 276 Z" fill="#4b6138" stroke="#78905a" stroke-width="2" opacity="0.78" />
+              <path d="M418 152 L594 137 L622 282 L386 286 Z" fill="#293b2c" stroke="#5b7553" stroke-width="2" opacity="0.92" />
+              <path d="M0 63 L640 63 M0 123 L640 123 M0 183 L640 183 M0 243 L640 243" stroke="#ffffff" stroke-width="1" opacity="0.08" />
+              <path d="M76 0 L76 300 M184 0 L184 300 M292 0 L292 300 M400 0 L400 300 M508 0 L508 300" stroke="#ffffff" stroke-width="1" opacity="0.08" />
+              <circle cx="112" cy="64" r="2" fill="#d7c174" opacity="0.35" />
+              <circle cx="488" cy="92" r="2" fill="#d7c174" opacity="0.28" />
+              <circle cx="330" cy="216" r="2" fill="#d7c174" opacity="0.22" />
+            `;
+          }
+
+          return `
+            <rect width="640" height="300" fill="#edf5ef" />
+            <path d="M0 224 C112 196 183 240 292 210 C408 178 476 214 640 184 L640 300 L0 300 Z" fill="#dcebd7" />
+            <path d="M0 82 C142 48 229 102 347 66 C474 28 546 74 640 44" fill="none" stroke="#c6d9c7" stroke-width="22" opacity="0.65" />
+            <path d="M76 0 L76 300 M184 0 L184 300 M292 0 L292 300 M400 0 L400 300 M508 0 L508 300" stroke="#ffffff" stroke-width="1" opacity="0.75" />
+            <path d="M0 62 L640 62 M0 122 L640 122 M0 182 L640 182 M0 242 L640 242" stroke="#ffffff" stroke-width="1" opacity="0.75" />
+          `;
+        }
+
+        function mapLayerControl() {
+          return `
+            <div class="map-layer-control">
+              <label for="mapLayer">Map Layer</label>
+              <select id="mapLayer">
+                <option value="field"${selectedMapLayer === "field" ? " selected" : ""}>Field sketch</option>
+                <option value="satellite"${selectedMapLayer === "satellite" ? " selected" : ""}>Satellite style</option>
+              </select>
+            </div>
+          `;
+        }
+
+        const currentMarker = current ? (() => {
+          const point = project(current);
+          return `<g class="map-marker" aria-label="Current coordinate">
+            <circle cx="${point.x}" cy="${point.y}" r="9" fill="#d9ad4f" stroke="#ffffff" stroke-width="3" />
+            <circle cx="${point.x}" cy="${point.y}" r="15" fill="none" stroke="#d9ad4f" stroke-width="2" opacity="0.5" />
+            <title>Current coordinates: ${formatCoordinate(current.latitude)}, ${formatCoordinate(current.longitude)}</title>
+          </g>`;
+        })() : "";
+
+        const areaMarkers = areaPoints.map(({ area, coordinates }) => {
+          const point = project(coordinates);
+          const active = area.id === selectedArea.id;
+          return `<g class="map-marker" data-area-id="${escapeHtml(area.id)}" aria-label="${escapeHtml(area.name)}">
+            <rect x="${point.x - 7}" y="${point.y - 7}" width="14" height="14" rx="3" fill="${active ? "#123f31" : "#1f6b4a"}" stroke="#ffffff" stroke-width="2" />
+            <text x="${point.x + 11}" y="${point.y + 4}" fill="#123f31" font-size="11" font-weight="700">${escapeHtml(area.name.slice(0, 18))}</text>
+            <title>${escapeHtml(area.name)}: ${formatCoordinate(coordinates.latitude)}, ${formatCoordinate(coordinates.longitude)}</title>
+          </g>`;
+        }).join("");
+
+        const boundaryShapes = areas.map((area) => {
+          const boundary = normalizeBoundary(area.boundary)
+            .map((point) => validCoordinate(point.latitude, point.longitude))
+            .filter(Boolean);
+          if (boundary.length < 2) return "";
+
+          const points = boundary.map((point) => {
+            const projected = project(point);
+            return `${projected.x},${projected.y}`;
+          }).join(" ");
+          const active = area.id === selectedArea.id;
+          const title = `${area.name} boundary: ${boundary.length} point(s)`;
+          if (boundary.length >= 3) {
+            return `<g class="map-marker" data-area-id="${escapeHtml(area.id)}">
+              <polygon points="${points}" fill="${active ? "rgba(31, 107, 74, 0.2)" : "rgba(109, 143, 84, 0.14)"}" stroke="${active ? "#123f31" : "#6d8f54"}" stroke-width="${active ? "3" : "2"}" stroke-linejoin="round" />
+              <title>${escapeHtml(title)}</title>
+            </g>`;
+          }
+          return `<g class="map-marker" data-area-id="${escapeHtml(area.id)}">
+            <polyline points="${points}" fill="none" stroke="${active ? "#123f31" : "#6d8f54"}" stroke-width="${active ? "3" : "2"}" stroke-linecap="round" stroke-dasharray="6 5" />
+            <title>${escapeHtml(title)}</title>
+          </g>`;
+        }).join("");
+
+        const boundaryMarkers = boundaryPoints.map(({ area, coordinates }, index) => {
+          const point = project(coordinates);
+          const active = area.id === selectedArea.id;
+          return `<g class="map-marker" data-area-id="${escapeHtml(area.id)}" aria-label="${escapeHtml(area.name)} boundary point">
+            <circle cx="${point.x}" cy="${point.y}" r="${active ? "4.5" : "3.5"}" fill="#ffffff" stroke="${active ? "#123f31" : "#6d8f54"}" stroke-width="2" />
+            <title>${escapeHtml(area.name)} boundary point ${index + 1}</title>
+          </g>`;
+        }).join("");
+
+        const recordMarkers = recordPoints.slice(0, 25).map(({ record, coordinates }, index) => {
+          const point = project(coordinates);
+          const color = record.risk === "High" ? "#9f3a2f" : record.risk === "Medium" ? "#91620d" : "#1f6b4a";
+          return `<g class="map-marker" data-record-index="${index}" aria-label="${escapeHtml(record.areaName || record.crop || "Saved record")}">
+            <circle cx="${point.x}" cy="${point.y}" r="5" fill="${color}" stroke="#ffffff" stroke-width="1.5" />
+            <title>${escapeHtml(record.areaName || record.crop || "Saved record")} - ${escapeHtml(record.risk || "Risk unknown")}</title>
+          </g>`;
+        }).join("");
+
+        locationMapEl.innerHTML = `
+          <div class="map-meta">
+            <div><span>Map center</span><strong>${formatCoordinate(center.latitude)}, ${formatCoordinate(center.longitude)}</strong></div>
+            <div><span>Managed areas</span><strong>${areaPoints.length} with coordinates</strong></div>
+            <div><span>Inspection points</span><strong>${recordPoints.length} with coordinates</strong></div>
+            <div><span>Boundaries</span><strong>${boundaryPoints.length} point(s)</strong></div>
+          </div>
+          <div class="map-canvas${isSatellite ? " satellite" : ""}">
+            <svg viewBox="0 0 640 300" role="img" aria-label="Local scouting map">
+              ${basemapSvg()}
+              ${boundaryShapes}
+              ${boundaryMarkers}
+              ${areaMarkers}
+              ${recordMarkers}
+              ${currentMarker}
+            </svg>
+          </div>
+          ${mapLayerControl()}
+          <div class="map-legend">
+            <span><i class="map-dot current"></i>Current coordinates</span>
+            <span><i class="map-dot"></i>Managed area</span>
+            <span><i class="map-dot boundary"></i>Area boundary</span>
+            <span><i class="map-dot record-low"></i>Low record</span>
+            <span><i class="map-dot record-medium"></i>Medium record</span>
+            <span><i class="map-dot record-high"></i>High record</span>
+          </div>
+          <div class="map-actions">
+            <button id="addBoundaryPoint" class="secondary" type="button">Add Boundary Point</button>
+            <button id="sampleBoundary" class="secondary" type="button">Use Sample Boundary</button>
+            <button id="clearBoundary" class="danger" type="button">Clear Boundary</button>
+          </div>
+          <div class="status-line">Demo map only: satellite style is a local visual layer, not live satellite imagery or surveyed GIS data.</div>
+        `;
+
+        bindMapControls();
+        locationMapEl.querySelectorAll("[data-area-id]").forEach((marker) => {
+          marker.addEventListener("click", () => selectManagedArea(marker.dataset.areaId));
+        });
+        locationMapEl.querySelectorAll("[data-record-index]").forEach((marker) => {
+          marker.addEventListener("click", () => {
+            const record = recordPoints[Number(marker.dataset.recordIndex)]?.record;
+            if (!record) return;
+            showStatus(`${record.areaName || record.crop || "Saved record"}: ${record.risk || "Risk unknown"} on ${formatRecordDate(record)}.`);
+          });
+        });
+      }
+
+      function bindMapControls() {
+        const layerSelect = document.getElementById("mapLayer");
+        const addButton = document.getElementById("addBoundaryPoint");
+        const sampleButton = document.getElementById("sampleBoundary");
+        const clearButton = document.getElementById("clearBoundary");
+        if (layerSelect) {
+          layerSelect.addEventListener("change", () => {
+            selectedMapLayer = layerSelect.value;
+            localStorage.setItem(mapLayerKey, selectedMapLayer);
+            renderLocationMap();
+            buildReport();
+          });
+        }
+        if (addButton) addButton.addEventListener("click", addBoundaryPointForArea);
+        if (sampleButton) sampleButton.addEventListener("click", useSampleBoundaryForArea);
+        if (clearButton) clearButton.addEventListener("click", clearBoundaryForArea);
       }
 
       function riskRank(risk) {
@@ -2110,6 +2609,7 @@ rainfall_mm: 0</textarea>
         const photoChecklist = photoChecklistItems();
         const sensors = parseSensorNotes(sensorDataEl.value);
         const forecastContext = forecastContextItems(sensors);
+        const selectedBoundary = normalizeBoundary(selectedArea.boundary);
         const advisor = advisorItems(risk, defaults, observations, sensors);
         const carePlan = carePlanItems(risk);
         const context = [
@@ -2121,6 +2621,8 @@ rainfall_mm: 0</textarea>
           `Managed area: ${cropEl.value || defaults.crop}`,
           `Area size: ${areaEl.value || "Not provided"}`,
           `Coordinates: ${latitudeEl.value && longitudeEl.value ? `${latitudeEl.value}, ${longitudeEl.value}` : "Not provided"}`,
+          `Map layer: ${selectedMapLayer === "satellite" ? "Satellite style" : "Field sketch"}`,
+          `Area boundary: ${selectedBoundary.length >= 3 ? `${selectedBoundary.length} point polygon attached` : selectedBoundary.length ? `${selectedBoundary.length} point sketch saved` : "Not set"}`,
           `Weather: ${weatherEl.value || "Not provided"}`,
           `Irrigation / watering: ${irrigationEl.value || "Not provided"}`,
           `Soil moisture: ${soilEl.value || "Not provided"}`,
@@ -2202,6 +2704,7 @@ rainfall_mm: 0</textarea>
         latestAdvisorPrompt = buildAdvisorPrompt(scenarioEl.value, latestReport);
 
         document.getElementById("outAdvisorPrompt").value = latestAdvisorPrompt;
+        renderLocationMap();
 
         return {
           id: Date.now(),
@@ -2218,6 +2721,9 @@ rainfall_mm: 0</textarea>
           weather: weatherEl.value || "",
           latitude: latitudeEl.value || "",
           longitude: longitudeEl.value || "",
+          mapLayer: selectedMapLayer,
+          areaBoundary: selectedBoundary,
+          areaBoundaryPointCount: selectedBoundary.length,
           irrigation: irrigationEl.value || "",
           soil: soilEl.value || "",
           treatment: treatmentEl.value || "",
@@ -2302,6 +2808,7 @@ rainfall_mm: 0</textarea>
         renderSavedRecords();
         renderDashboard();
         updateAreaSummary();
+        renderLocationMap();
         showStatus("Inspection record saved locally.");
       }
 
@@ -2312,6 +2819,7 @@ rainfall_mm: 0</textarea>
         renderSavedRecords();
         renderDashboard();
         updateAreaSummary();
+        renderLocationMap();
         showStatus("Inspection record deleted.");
       }
 
@@ -2321,7 +2829,9 @@ rainfall_mm: 0</textarea>
         localStorage.removeItem(storageKey);
         localStorage.removeItem(areasKey);
         localStorage.removeItem(selectedAreaKey);
+        localStorage.removeItem(mapLayerKey);
         selectedAreaId = "vineyard-block-a";
+        selectedMapLayer = "field";
         loadedPhotos = [];
         renderPhotoPreviews();
         photoEl.value = "";
@@ -2365,6 +2875,7 @@ rainfall_mm: 0</textarea>
         renderManagedAreas();
         renderDashboard();
         updateAreaSummary();
+        renderLocationMap();
         showStatus("Saved record loaded.");
       }
 
@@ -2438,7 +2949,7 @@ rainfall_mm: 0</textarea>
           button.className = "saved-item";
           button.type = "button";
           const date = formatRecordDate(record);
-          button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.areaName || record.scenario} · ${date} · ${record.photoCount} photo(s)</span>`;
+          button.innerHTML = `<strong>${record.crop} · ${record.risk}</strong><span>${record.areaName || record.scenario} · ${date} · ${record.photoCount} photo(s) · ${record.areaBoundaryPointCount || 0} boundary point(s)</span>`;
           button.addEventListener("click", () => loadRecord(record));
           const deleteButton = document.createElement("button");
           deleteButton.className = "mini-button";
@@ -2473,6 +2984,7 @@ rainfall_mm: 0</textarea>
       document.getElementById("addArea").addEventListener("click", addManagedArea);
       document.getElementById("updateArea").addEventListener("click", updateCurrentArea);
       document.getElementById("deleteArea").addEventListener("click", deleteCurrentArea);
+      document.getElementById("saveAreaLocation").addEventListener("click", saveCurrentCoordinatesForArea);
       document.getElementById("useLocation").addEventListener("click", useMyLocation);
       document.getElementById("fetchWeather").addEventListener("click", fetchWeather);
       document.getElementById("sampleWeather").addEventListener("click", useSampleWeather);
@@ -2511,6 +3023,7 @@ rainfall_mm: 0</textarea>
       renderSavedRecords();
       renderDashboard();
       updateAreaSummary();
+      renderLocationMap();
     </script>
   </body>
 </html>

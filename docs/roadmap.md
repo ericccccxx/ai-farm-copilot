@@ -209,21 +209,21 @@ Success metric:
 
 ## V0.28: Map Location View
 
-- Add a map panel centered on the current GPS coordinates.
-- Show managed areas and saved inspection points on the map.
-- Store center coordinates for managed areas.
+- Add a map panel centered on the current GPS coordinates. Done in V0.28.
+- Show managed areas and saved inspection points on the map. Done in V0.28.
+- Store center coordinates for managed areas. Done in V0.28.
 
 ## V0.29: Managed Area Boundaries
 
-- Add simple boundary drawing for vineyard blocks, orchard zones, golf zones, and garden beds.
-- Store polygon boundaries locally.
-- Attach saved inspections to area boundaries for later satellite clipping.
+- Add simple boundary drawing for vineyard blocks, orchard zones, golf zones, and garden beds. Done in V0.29.
+- Store polygon boundaries locally. Done in V0.29.
+- Attach saved inspections to area boundaries for later satellite clipping. Done in V0.29.
 
 ## V0.30: Satellite Basemap MVP
 
-- Add a satellite-style map layer.
-- Show current location, managed areas, and saved inspection points over the basemap.
-- Prioritize visual clarity before advanced agronomic analysis.
+- Add a satellite-style map layer. Done in V0.30.
+- Show current location, managed areas, and saved inspection points over the basemap. Done in V0.30.
+- Prioritize visual clarity before advanced agronomic analysis. Done in V0.30.
 
 ## V0.31: Satellite NDVI Data
 

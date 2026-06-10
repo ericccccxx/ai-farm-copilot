@@ -40,9 +40,15 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.27 demo supports:
+The V0.30 demo supports:
 
 - Local multi-image upload and preview.
+- Local map location view for current coordinates, managed areas, and saved inspection points.
+- Satellite-style local basemap layer with a field sketch fallback.
+- Managed area center coordinates with a manual "Use Current Coordinates for Area" save control.
+- Risk-colored saved inspection markers on the local map.
+- Managed area boundary sketches with saved polygon points.
+- Boundary snapshots attached to saved inspection records for later satellite clipping workflows.
 - Photo role tagging for overview, affected area, healthy comparison, close-up, drone, and sensor/equipment images.
 - Batch photo filename parsing for date, area hints, and role detection.
 - Drone/camera batch summary in generated reports.
@@ -152,6 +158,9 @@ ai-farm-copilot/
 - V0.25: Browser geolocation for automatic coordinates.
 - V0.26: Local timezone and inspection time.
 - V0.27: 7-day weather forecast risk notes.
+- V0.28: Local map view for current coordinates, managed areas, and saved inspection points.
+- V0.29: Managed area boundary sketches attached to saved inspection records.
+- V0.30: Satellite-style local basemap layer for clearer map context.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.
