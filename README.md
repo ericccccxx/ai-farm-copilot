@@ -40,12 +40,14 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.31 demo supports:
+The V0.32 demo supports:
 
 - Local multi-image upload and preview.
 - Local map location view for current coordinates, managed areas, and saved inspection points.
 - Satellite-style local basemap layer with a field sketch fallback.
 - Local satellite NDVI adapter with cloud-aware recent image selection when an area boundary is available.
+- Satellite NDVI trend comparison against a previous selected image.
+- NDVI trend status in the monitoring dashboard and selected-area detail view.
 - Satellite vegetation notes written into reports and Advisor Mode.
 - Managed area center coordinates with a manual "Use Current Coordinates for Area" save control.
 - Risk-colored saved inspection markers on the local map.
@@ -164,6 +166,7 @@ ai-farm-copilot/
 - V0.29: Managed area boundary sketches attached to saved inspection records.
 - V0.30: Satellite-style local basemap layer for clearer map context.
 - V0.31: Satellite NDVI data and cloud-aware image selection for bounded areas.
+- V0.32: Satellite NDVI time comparison and trend status.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

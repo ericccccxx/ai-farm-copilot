@@ -382,7 +382,7 @@
 
       .dashboard {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 18px;
       }
@@ -806,7 +806,7 @@
     <header>
       <div class="header-inner">
         <h1>AI Farm Copilot</h1>
-        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, satellite NDVI, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.31 demo runs entirely in your browser.</p>
+        <p class="tagline">Turn field photos, camera batches, CSV/JSON readings, satellite NDVI trends, map locations, satellite-style basemaps, area boundaries, and sensor notes into saved advisor-ready scouting reports. This V0.32 demo runs entirely in your browser.</p>
       </div>
     </header>
 
@@ -1014,6 +1014,7 @@ rainfall_mm: 0</textarea>
           <div class="dashboard-card"><span>Total records</span><strong id="dashRecords">0</strong></div>
           <div class="dashboard-card"><span>High-risk records</span><strong id="dashHighRisk">0</strong></div>
           <div class="dashboard-card"><span>Latest risk</span><strong id="dashLatestRisk">None</strong></div>
+          <div class="dashboard-card"><span>Satellite trend</span><strong id="dashSatelliteTrend">None</strong></div>
         </div>
 
         <h3>Risk Trend</h3>
@@ -1584,6 +1585,28 @@ rainfall_mm: 0</textarea>
         return "Very low satellite vegetation signal";
       }
 
+      function satelliteTrendLabel(currentNdvi, previousNdvi) {
+        if (!Number.isFinite(currentNdvi) || !Number.isFinite(previousNdvi)) return "Unavailable";
+        const change = currentNdvi - previousNdvi;
+        if (change >= 0.04) return "Improving";
+        if (change <= -0.04) return "Declining";
+        return "Stable";
+      }
+
+      function satelliteMetricFromText(text, key) {
+        const match = String(text || "").match(new RegExp(`${key}:\\s*([^\\n]+)`, "i"));
+        if (!match) return "";
+        return match[1].trim();
+      }
+
+      function satelliteTrendFromText(text) {
+        const explicit = satelliteMetricFromText(text, "satellite_ndvi_trend");
+        if (explicit) return explicit;
+        const current = Number(satelliteMetricFromText(text, "satellite_ndvi"));
+        const previous = Number(satelliteMetricFromText(text, "satellite_previous_ndvi"));
+        return satelliteTrendLabel(current, previous);
+      }
+
       function satelliteImageCandidates(area) {
         const boundary = normalizeBoundary(area.boundary);
         const seed = stableHash(`${area.id}-${boundary.length}-${area.latitude}-${area.longitude}`);
@@ -1613,6 +1636,11 @@ rainfall_mm: 0</textarea>
         const clearCandidates = candidates.filter((candidate) => candidate.cloudCover <= 35);
         const selected = (clearCandidates.length ? clearCandidates : candidates)
           .sort((a, b) => a.cloudCover - b.cloudCover || new Date(b.date) - new Date(a.date))[0];
+        const previous = candidates
+          .filter((candidate) => new Date(candidate.date) < new Date(selected.date))
+          .sort((a, b) => a.cloudCover - b.cloudCover || new Date(b.date) - new Date(a.date))[0] || candidates.find((candidate) => candidate.date !== selected.date);
+        const trend = previous ? satelliteTrendLabel(selected.ndvi, previous.ndvi) : "Unavailable";
+        const change = previous ? Math.round((selected.ndvi - previous.ndvi) * 1000) / 1000 : "";
         const status = satelliteNdviStatus(selected.ndvi);
         const sourceNote = clearCandidates.length ? "selected lowest-cloud recent image" : "fallback selected despite cloud cover";
 
@@ -1625,10 +1653,14 @@ rainfall_mm: 0</textarea>
           `satellite_cloud_cover_percent: ${selected.cloudCover}`,
           `satellite_ndvi: ${selected.ndvi}`,
           `satellite_ndvi_status: ${status}`,
+          `satellite_previous_image_date: ${previous?.date || "unavailable"}`,
+          `satellite_previous_ndvi: ${previous?.ndvi ?? "unavailable"}`,
+          `satellite_ndvi_change: ${change === "" ? "unavailable" : change}`,
+          `satellite_ndvi_trend: ${trend}`,
           `satellite_selection_note: ${sourceNote}`
         ].filter(Boolean).join("\n");
 
-        showStatus(`Satellite NDVI imported: ${selected.ndvi} with ${selected.cloudCover}% cloud cover.`);
+        showStatus(`Satellite NDVI imported: ${selected.ndvi}; trend ${trend.toLowerCase()}.`);
         buildReport();
       }
 
@@ -2164,6 +2196,7 @@ rainfall_mm: 0</textarea>
       function renderAreaDetail(area, records) {
         const latest = records[0];
         const highest = highestRisk(records);
+        const satelliteTrend = latestSatelliteTrend(records);
         const latestDate = latest ? formatRecordDate(latest, { dateStyle: "medium", timeStyle: "short" }) : "None";
         const latestAction = latest?.report?.match(/## Recommended Next Actions\n([\s\S]*?)\n\n## Do Not Do Yet/)?.[1]?.split("\n")[0]?.replace(/^\d+\.\s*/, "") || "Save an inspection to generate next actions.";
         const history = records.slice(0, 3).map((record) => {
@@ -2177,6 +2210,7 @@ rainfall_mm: 0</textarea>
             <div class="area-detail-item"><span>Latest inspection</span><strong>${latestDate}</strong></div>
             <div class="area-detail-item"><span>Highest saved risk</span><strong class="${riskClass(highest)}">${escapeHtml(highest)}</strong></div>
             <div class="area-detail-item"><span>Boundary points</span><strong>${normalizeBoundary(area.boundary).length}</strong></div>
+            <div class="area-detail-item"><span>Satellite trend</span><strong>${escapeHtml(satelliteTrend)}</strong></div>
           </div>
           <p><strong>Next action:</strong> ${escapeHtml(latestAction)}</p>
           <ul>${history || "<li>No saved inspections for this area yet.</li>"}</ul>
@@ -2427,6 +2461,14 @@ rainfall_mm: 0</textarea>
         }, "None");
       }
 
+      function latestSatelliteTrend(records) {
+        const record = records.find((item) => {
+          return item.satelliteNdviTrend || satelliteMetricFromText(item.sensorData, "satellite_ndvi");
+        });
+        if (!record) return "None";
+        return record.satelliteNdviTrend || satelliteTrendFromText(record.sensorData);
+      }
+
       function riskClass(risk) {
         return `risk-${(risk || "none").toLowerCase()}`;
       }
@@ -2566,11 +2608,13 @@ rainfall_mm: 0</textarea>
         const records = filterRecordsByDashboardDate(filterRecordsByRisk(scope.records));
         const latest = records[0];
         const highRiskCount = records.filter((record) => record.risk === "High").length;
+        const satelliteTrend = latestSatelliteTrend(records);
 
         document.getElementById("dashAreas").textContent = String(scope.areas.length);
         document.getElementById("dashRecords").textContent = String(records.length);
         document.getElementById("dashHighRisk").textContent = String(highRiskCount);
         document.getElementById("dashLatestRisk").textContent = latest ? latest.risk : "None";
+        document.getElementById("dashSatelliteTrend").textContent = satelliteTrend;
         renderRiskTrend(records);
 
         areaHealthEl.innerHTML = "";
@@ -2578,12 +2622,14 @@ rainfall_mm: 0</textarea>
           const areaRecords = filterRecordsByDashboardDate(filterRecordsByRisk(allRecords.filter((record) => record.areaId === area.id)));
           const risk = highestRisk(areaRecords);
           const latestRecord = areaRecords[0];
+          const areaSatelliteTrend = latestSatelliteTrend(areaRecords);
           const card = document.createElement("button");
           card.type = "button";
           card.className = "health-card";
           card.innerHTML = `
             <strong>${area.name}</strong>
             <span>${areaRecords.length} record(s) · highest risk: <b class="${riskClass(risk)}">${risk}</b></span>
+            <span>Satellite trend: ${areaSatelliteTrend}</span>
             <span>${latestRecord ? `Latest: ${formatRecordDate(latestRecord, { dateStyle: "short" })}` : "No saved inspections yet"}</span>
             <div class="risk-bar" aria-hidden="true">
               <div class="risk-segment low${riskRank(risk) >= 1 ? " active" : ""}"></div>
@@ -2637,6 +2683,7 @@ rainfall_mm: 0</textarea>
         }
         if (hasSatellite) {
           advisor.push("Satellite note: treat satellite NDVI as area-level vegetation context; confirm with close-up photos and field checks before narrowing causes.");
+          advisor.push(`Satellite trend: ${satelliteTrendFromText(sensorDataEl.value)} compared with the previous selected image.`);
         }
         if (observations.join(" ").toLowerCase().includes("yellow")) {
           advisor.push("Yellowing note: separate older-leaf yellowing from new-growth yellowing before narrowing causes.");
@@ -2683,6 +2730,9 @@ rainfall_mm: 0</textarea>
         const forecastContext = forecastContextItems(sensors);
         const satelliteContext = satelliteContextItems(sensors);
         const selectedBoundary = normalizeBoundary(selectedArea.boundary);
+        const satelliteNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_ndvi");
+        const satellitePreviousNdvi = satelliteMetricFromText(sensorDataEl.value, "satellite_previous_ndvi");
+        const satelliteNdviTrend = satelliteTrendFromText(sensorDataEl.value);
         const advisor = advisorItems(risk, defaults, observations, sensors);
         const carePlan = carePlanItems(risk);
         const context = [
@@ -2802,6 +2852,9 @@ rainfall_mm: 0</textarea>
           soil: soilEl.value || "",
           treatment: treatmentEl.value || "",
           sensorData: sensorDataEl.value || "",
+          satelliteNdvi,
+          satellitePreviousNdvi,
+          satelliteNdviTrend,
           observation: notesEl.value || "",
           photoCount: loadedPhotos.length,
           photoRoles: loadedPhotos.map((photo) => ({ name: photo.name, role: photo.role, date: photo.date, areaHint: photo.areaHint })),

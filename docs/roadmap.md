@@ -233,9 +233,9 @@ Success metric:
 
 ## V0.32: Satellite Time Comparison
 
-- Compare current and previous NDVI readings.
-- Classify satellite trend as improving, stable, declining, or unavailable.
-- Add NDVI trend to dashboard and area detail.
+- Compare current and previous NDVI readings. Done in V0.32.
+- Classify satellite trend as improving, stable, declining, or unavailable. Done in V0.32.
+- Add NDVI trend to dashboard and area detail. Done in V0.32.
 
 ## V0.33: Photo AI Evidence
 
