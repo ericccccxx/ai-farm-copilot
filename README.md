@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.36 demo supports:
+The V0.36.1 demo supports:
 
 - Local multi-image upload and preview.
 - Pilot Mode for vineyards, orchards, and golf courses.
@@ -105,6 +105,10 @@ The V0.36 demo supports:
 - JSON history export.
 - Local demo data reset.
 
+### Demo Scope and Limitations
+
+The browser demo is local and deterministic. Satellite NDVI is a simulated local adapter, not a live satellite feed. Photo evidence is inferred from photo roles, filenames, and notes, not from a hosted vision model. Managed area boundaries are scouting sketches, not surveyed GIS data. Evidence Fusion Score is prioritization support only and should not be used as a confirmed diagnosis or treatment instruction.
+
 ## Example Prompt
 
 ```text
@@ -154,7 +158,7 @@ ai-farm-copilot/
 - V0.8: CSV import for sensor readings and inspection logs.
 - V0.9: camera and drone photo batch workflow.
 - V0.10: ESP32/Raspberry Pi sensor JSON adapter.
-- V0.11: NDVI and map-based scouting notes.
+- V0.11: NDVI vegetation index notes.
 - V0.12: Advisor Mode and 7-day care plan.
 - V0.13: Browser print and Save as PDF report export.
 - V0.14: Copyable advisor prompt export for Codex and Claude.
@@ -172,14 +176,15 @@ ai-farm-copilot/
 - V0.26: Local timezone and inspection time.
 - V0.27: 7-day weather forecast risk notes.
 - V0.28: Local map view for current coordinates, managed areas, and saved inspection points.
-- V0.29: Managed area boundary sketches attached to saved inspection records.
+- V0.29: Managed area boundary point sketches attached to saved inspection records.
 - V0.30: Satellite-style local basemap layer for clearer map context.
-- V0.31: Satellite NDVI data and cloud-aware image selection for bounded areas.
+- V0.31: Local demo satellite NDVI adapter and cloud-aware image selection for bounded areas.
 - V0.32: Satellite NDVI time comparison and trend status.
-- V0.33: Optional photo evidence extraction with missing photo requests.
+- V0.33: Optional local photo evidence extraction with missing photo requests.
 - V0.34: Evidence Fusion Score with evidence source influence notes.
 - V0.35: One-click AI report generation and downloadable evidence packet.
 - V0.36: Pilot Mode with weekly Markdown, JSON, and browser PDF reporting.
+- V0.36.1: Audit alignment fixes for satellite trend handling, demo scope wording, and quoted CSV parsing.
 - V1: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.

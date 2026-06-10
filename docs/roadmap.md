@@ -215,7 +215,7 @@ Success metric:
 
 ## V0.29: Managed Area Boundaries
 
-- Add simple boundary drawing for vineyard blocks, orchard zones, golf zones, and garden beds. Done in V0.29.
+- Add boundary point sketching and sample polygon boundaries for vineyard blocks, orchard zones, golf zones, and garden beds. Done in V0.29.
 - Store polygon boundaries locally. Done in V0.29.
 - Attach saved inspections to area boundaries for later satellite clipping. Done in V0.29.
 
@@ -227,7 +227,7 @@ Success metric:
 
 ## V0.31: Satellite NDVI Data
 
-- Connect a satellite data source for NDVI when an area boundary is available. Done in V0.31.
+- Add a local demo satellite NDVI adapter when an area boundary is available. Done in V0.31.
 - Add cloud-aware recent image selection. Done in V0.31.
 - Add satellite vegetation notes to the report. Done in V0.31.
 
@@ -239,9 +239,15 @@ Success metric:
 
 ## V0.33: Photo AI Evidence
 
-- Add optional vision-model analysis for uploaded photos. Done in V0.33.
+- Add optional local photo evidence extraction based on photo roles, filenames, and notes. Done in V0.33.
 - Extract visible symptoms, affected plant parts, image quality, and missing photo requests. Done in V0.33.
 - Treat photo AI output as evidence, not a final diagnosis. Done in V0.33.
+
+## V0.36.1: Audit Alignment
+
+- Fix unavailable satellite NDVI trend handling so missing data does not appear as stable.
+- Clarify local demo adapters for satellite, photo evidence, boundaries, and fusion scoring.
+- Improve CSV parsing for quoted cells and commas inside field notes.
 
 ## V0.34: Evidence Fusion Score
 
