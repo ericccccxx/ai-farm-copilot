@@ -40,7 +40,7 @@ AI Farm Copilot is not a replacement for a certified agronomist, pesticide advis
 
 Open `demo/index.html` in your browser. The demo runs locally and does not send data anywhere.
 
-The V0.36.1 demo supports:
+The V1.0-ready demo supports:
 
 - Local multi-image upload and preview.
 - Pilot Mode for vineyards, orchards, and golf courses.
@@ -104,6 +104,12 @@ The V0.36.1 demo supports:
 - Saved record deletion.
 - JSON history export.
 - Local demo data reset.
+
+V1.0 release materials:
+
+- [V1.0 release checklist](docs/v1-release-checklist.md)
+- [Pilot request form](docs/pilot-request-form.md)
+- GitHub issue templates for bugs, features, field examples, hardware integrations, and pilot feedback.
 
 ### Demo Scope and Limitations
 
@@ -185,7 +191,8 @@ ai-farm-copilot/
 - V0.35: One-click AI report generation and downloadable evidence packet.
 - V0.36: Pilot Mode with weekly Markdown, JSON, and browser PDF reporting.
 - V0.36.1: Audit alignment fixes for satellite trend handling, demo scope wording, and quoted CSV parsing.
-- V1: hosted dashboard and optional hardware kit integrations.
+- V1.0: free usable release with demo QA checklist, pilot request form, and GitHub feedback templates.
+- V1.5: hosted dashboard and optional hardware kit integrations.
 
 See `docs/roadmap.md` for the full plan.
 

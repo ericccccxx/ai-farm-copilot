@@ -243,12 +243,6 @@ Success metric:
 - Extract visible symptoms, affected plant parts, image quality, and missing photo requests. Done in V0.33.
 - Treat photo AI output as evidence, not a final diagnosis. Done in V0.33.
 
-## V0.36.1: Audit Alignment
-
-- Fix unavailable satellite NDVI trend handling so missing data does not appear as stable.
-- Clarify local demo adapters for satellite, photo evidence, boundaries, and fusion scoring.
-- Improve CSV parsing for quoted cells and commas inside field notes.
-
 ## V0.34: Evidence Fusion Score
 
 - Combine photo, weather, satellite, history, and sensor signals into a risk score. Done in V0.34.
@@ -267,12 +261,19 @@ Success metric:
 - Export weekly reports in Markdown, JSON, and browser PDF. Done in V0.36.
 - Add pilot intake form and reporting checklist. Done in V0.36.
 
+## V0.36.1: Audit Alignment
+
+- Fix unavailable satellite NDVI trend handling so missing data does not appear as stable. Done in V0.36.1.
+- Clarify local demo adapters for satellite, photo evidence, boundaries, and fusion scoring. Done in V0.36.1.
+- Improve CSV parsing for quoted cells and commas inside field notes. Done in V0.36.1.
+
 ## V1.0: Free Usable Release
 
-- GitHub Pages demo, agent skill, and documentation are complete.
-- Photo, location, weather, map, history, and report flow can run end to end.
-- Satellite and vision AI remain optional integrations.
-- README clearly explains open-source use, agent use, hardware use, and drone/robot compatibility.
+- GitHub Pages-ready demo, agent skill, and documentation are complete. Done in V1.0.
+- Photo, location, weather, map, history, and report flow can run end to end. Done in V1.0.
+- Satellite and photo evidence stay clearly labeled as local demo/scouting support. Done in V1.0.
+- README clearly explains open-source use, agent use, hardware use, and drone/robot compatibility. Done in V1.0.
+- Add release QA checklist, pilot request form, and GitHub feedback templates. Done in V1.0.
 
 ## V1.5: Hosted Dashboard
 

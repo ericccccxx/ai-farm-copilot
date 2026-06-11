@@ -7,7 +7,6 @@ Use this as the first GitHub issue list after launch.
 - Add saved inspection report examples.
 - Add branded PDF inspection report template.
 - Add weekly summary workflow.
-- Add pilot intake form.
 
 ## Skill
 
@@ -56,6 +55,10 @@ Use this as the first GitHub issue list after launch.
 ## Community
 
 - Add launch video.
+- Add contributor examples.
+
+## Completed In V1.0
+
+- Add pilot intake form.
 - Add first pilot request form.
 - Add GitHub issue templates.
-- Add contributor examples.
