@@ -162,18 +162,25 @@
       }
 
       .intake-stack {
+        counter-reset: intake-step;
         display: grid;
         gap: 12px;
       }
 
       .intake-group {
+        counter-increment: intake-step;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: rgba(251, 252, 247, 0.78);
         overflow: hidden;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease,
+          background 0.15s ease;
       }
 
       .intake-group[open] {
+        border-color: rgba(35, 106, 75, 0.26);
         background: #ffffff;
         box-shadow: var(--shadow-soft);
       }
@@ -215,14 +222,31 @@
       }
 
       .intake-title {
-        display: block;
+        display: flex;
+        gap: 9px;
+        align-items: center;
         font-size: 14px;
         font-weight: 800;
       }
 
+      .intake-title::before {
+        content: counter(intake-step);
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        color: white;
+        background: var(--canopy);
+        font-size: 11px;
+        line-height: 1;
+      }
+
       .intake-hint {
         display: block;
-        margin-top: 3px;
+        margin-top: 5px;
+        padding-left: 31px;
         color: var(--muted);
         font-size: 12px;
         line-height: 1.35;
@@ -237,6 +261,13 @@
         margin: 0 0 14px;
         font-size: 20px;
         line-height: 1.25;
+      }
+
+      .report-note {
+        margin: -6px 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
       }
 
       h3 {
@@ -579,6 +610,10 @@
         gap: 10px;
         align-items: end;
         margin-bottom: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: var(--paper-soft);
       }
 
       .dashboard-filter label {
@@ -586,11 +621,22 @@
       }
 
       .dashboard-card {
+        position: relative;
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 12px;
         background: linear-gradient(180deg, #ffffff, var(--paper-soft));
         box-shadow: var(--shadow-soft);
+        overflow: hidden;
+      }
+
+      .dashboard-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--canopy);
+        opacity: 0.72;
       }
 
       .dashboard-card span {
@@ -1298,6 +1344,7 @@ rainfall_mm: 0</textarea>
 
       <section class="report" aria-label="Inspection report">
         <h2>Monitoring Dashboard</h2>
+        <p class="report-note">Review area status, map context, saved inspection history, and the current generated report from one workspace.</p>
 
         <div class="dashboard-filter">
           <div>
