@@ -154,6 +154,85 @@
         background: #c6d4c8;
       }
 
+      .panel-note {
+        margin: -4px 0 16px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .intake-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .intake-group {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(251, 252, 247, 0.78);
+        overflow: hidden;
+      }
+
+      .intake-group[open] {
+        background: #ffffff;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .intake-group summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 13px 14px;
+        color: var(--ink);
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .intake-group summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .intake-group summary:focus-visible {
+        outline: 3px solid rgba(35, 106, 75, 0.18);
+        outline-offset: -3px;
+      }
+
+      .intake-group summary::after {
+        content: "+";
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        color: var(--canopy-dark);
+        background: #e8f2ec;
+        font-weight: 800;
+      }
+
+      .intake-group[open] summary::after {
+        content: "-";
+      }
+
+      .intake-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .intake-hint {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .intake-body {
+        border-top: 1px solid #edf1eb;
+        padding: 14px;
+      }
+
       h2 {
         margin: 0 0 14px;
         font-size: 20px;
@@ -869,6 +948,10 @@
         .report {
           padding: 18px;
         }
+
+        .intake-group summary {
+          grid-template-columns: minmax(0, 1fr) 24px;
+        }
       }
 
       @media print {
@@ -936,7 +1019,17 @@
     <main>
       <section class="panel" aria-label="Inspection input">
         <h2>Field Intake</h2>
+        <p class="panel-note">Start with a photo and field context, then open the sections you need for data, pilot reporting, or saved history.</p>
 
+        <div class="intake-stack">
+        <details class="intake-group" open>
+          <summary>
+            <span>
+              <span class="intake-title">Photo Evidence</span>
+              <span class="intake-hint">Upload field images and classify visible evidence.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <div id="preview" class="photo-preview">
           <div class="photo-empty">
             <strong>Photo preview</strong><br />
@@ -947,8 +1040,17 @@
         <label for="photo">Photos</label>
         <input id="photo" type="file" accept="image/*" multiple />
         <button id="analyzePhotos" class="secondary" type="button">Analyze Photo Evidence</button>
+          </div>
+        </details>
 
-        <h3>Managed Area</h3>
+        <details class="intake-group" open>
+          <summary>
+            <span>
+              <span class="intake-title">Managed Areas</span>
+              <span class="intake-hint">Choose or update the block, zone, bed, or course area.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <div id="areaList" class="area-list"></div>
 
         <div class="grid-two">
@@ -967,7 +1069,17 @@
           <button id="deleteArea" class="danger" type="button">Delete Current Area</button>
           <button id="saveAreaLocation" class="secondary" type="button">Use Current Coordinates for Area</button>
         </div>
+          </div>
+        </details>
 
+        <details class="intake-group" open>
+          <summary>
+            <span>
+              <span class="intake-title">Field Context</span>
+              <span class="intake-hint">Set scenario, crop, weather, location, and observations.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <div class="grid-two">
           <div>
             <label for="scenario">Scenario</label>
@@ -1027,7 +1139,17 @@
 
         <label for="treatment">Recent treatment</label>
         <input id="treatment" value="None recorded" />
+          </div>
+        </details>
 
+        <details class="intake-group">
+          <summary>
+            <span>
+              <span class="intake-title">Sensor, CSV & NDVI</span>
+              <span class="intake-hint">Optional readings for richer evidence fusion.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <label for="sensorData">Sensor / weather readings</label>
         <textarea id="sensorData">soil_moisture_percent: 28
 air_temperature_c: 34
@@ -1065,7 +1187,17 @@ rainfall_mm: 0</textarea>
           <button id="sampleNdvi" class="secondary" type="button">Use Sample NDVI</button>
           <button id="satelliteNdvi" class="secondary" type="button">Import Satellite NDVI</button>
         </div>
+          </div>
+        </details>
 
+        <details class="intake-group" open>
+          <summary>
+            <span>
+              <span class="intake-title">Report Actions</span>
+              <span class="intake-hint">Generate, save, export, or clear local demo data.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <label for="notes">Observation</label>
         <textarea id="notes">Lower leaves yellowing on several vines, some curling at the edges.</textarea>
 
@@ -1080,8 +1212,17 @@ rainfall_mm: 0</textarea>
           <button id="clearData" class="danger">Clear Local Data</button>
         </div>
         <div id="statusLine" class="status-line"></div>
+          </div>
+        </details>
 
-        <h3>Pilot Mode</h3>
+        <details class="intake-group">
+          <summary>
+            <span>
+              <span class="intake-title">Pilot Mode</span>
+              <span class="intake-hint">Capture pilot details and export weekly summaries.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <div class="grid-two">
           <div>
             <label for="pilotName">Pilot account</label>
@@ -1118,8 +1259,17 @@ rainfall_mm: 0</textarea>
           <button id="exportWeeklyJson" class="secondary" type="button">Export Weekly JSON</button>
           <button id="printWeeklyReport" class="secondary" type="button">Print Weekly PDF</button>
         </div>
+          </div>
+        </details>
 
-        <h3>Saved Records</h3>
+        <details class="intake-group">
+          <summary>
+            <span>
+              <span class="intake-title">Saved Records</span>
+              <span class="intake-hint">Search, filter, sort, and reopen inspection history.</span>
+            </span>
+          </summary>
+          <div class="intake-body">
         <div class="saved-controls">
           <input id="savedSearch" placeholder="Search saved records" />
           <select id="savedSort" aria-label="Sort saved records">
@@ -1141,6 +1291,9 @@ rainfall_mm: 0</textarea>
           <button class="quick-filter" type="button" data-filter="recent">Recent 7 Days</button>
         </div>
         <div id="savedList" class="saved-list"></div>
+          </div>
+        </details>
+        </div>
       </section>
 
       <section class="report" aria-label="Inspection report">
